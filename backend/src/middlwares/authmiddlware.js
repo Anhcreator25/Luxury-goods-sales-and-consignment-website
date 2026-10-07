@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken'
 export const verifyToken =(req,res,next)=>{
     const authHeader =req.headers.authorization;
 
-    if(!authHeader || !authHeader.startWith('Bearer ')){
+    if(!authHeader || !authHeader.startsWith('Bearer ')){
         return res.status(401).json({
             sucess: false,
             message: 'truy cập bị từ chối , ko tìm thấy token xác nhận'
