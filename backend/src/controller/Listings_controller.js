@@ -1,5 +1,5 @@
 import {createListingService} from "../services/Listings_services.js";
-
+  
  export const createListingController = async(req,res) =>{
     try {
         const sellerid= req.user.id;
