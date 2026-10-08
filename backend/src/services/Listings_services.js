@@ -5,7 +5,7 @@ export const createListingService = async(sellerId, data)=>{
     const{
         category_id,
         title,
-        brand,
+        brand_id,
         condition_grade,
         original_price,
         selling_price,
@@ -18,14 +18,14 @@ export const createListingService = async(sellerId, data)=>{
     }
 
     const query =
-    `INSERT INTO listings (seller_id, category_id, title,brand,condition_grade,original_price, selling_price,  images, description ,status, created_at) 
+    `INSERT INTO listings (seller_id, category_id, title,brand_id,condition_grade,original_price, selling_price,  images, description ,status, created_at) 
        VALUE (?,?,?,?,?,?,?,?,?,'active',NOW())`;
     
     const [result]=await pool.query(query,[
         sellerId,
         category_id,
         title,
-        brand || null,
+        brand_id || null,
         condition_grade || 'LIKE_NEW (99%)',
         original_price ||null,
         selling_price,
@@ -43,29 +43,75 @@ export const createListingService = async(sellerId, data)=>{
 }
 
 //Get production list include : Support finding ,filter list or price production and pagination
-export const getListingServices = async (queryParams)=>{
-    let {title,brand_id,category_id,page,limit}=queryParams;
+export const getListingServices = async (queryParams) => {
+    let { title, brand, category_id, page, limit } = queryParams;
    
     // Set default pagination
-    page = parseInt(page)||1;
-    limit = parseInt(limit)||10;
-    const offset= (page-1) * limit;
+    page = parseInt(page) || 1;
+    limit = parseInt(limit) || 10;
+    const offset = (page - 1) * limit;
 
-    let baseQuery =`SELECT listings.*, brands.name AS brand_name
-    FROM listings 
-    LEFT JOIN brands ON listings.brand_id = brands.id
-    WHERE 1=1`;
+    let baseQuery = `
+        SELECT listings.*, brands.name AS brand_name
+        FROM listings 
+        LEFT JOIN brands ON listings.brand_id = brands.id
+        WHERE 1=1
+    `;
 
-    let countQuery ='SELECT COUNT(*) AS total FROM listings WHERE 1=1'
+    let countQuery = `
+        SELECT COUNT(*) AS total 
+        FROM listings 
+        LEFT JOIN brands ON listings.brand_id = brands.id
+        WHERE 1=1
+    `;
+    
     const queryParamsValues = [];
     const countParamsValues = [];
 
-    // Filter by name
-    if(title){
-        baseQuery+= `AND listings.title LIKE ?`;
-        countQuery+=  `AND title LIKE ?`;
+    // Filter by name 
+    if (title) {
+        baseQuery += ` AND listings.title LIKE ?`;
+        countQuery += ` AND listings.title LIKE ?`;
         const titleKeyword = `%${title}%`;
         queryParamsValues.push(titleKeyword);
         countParamsValues.push(titleKeyword);
     }
+
+    // Filter by brand
+    if (brand) {
+        baseQuery += ` AND brands.name LIKE ?`;
+        countQuery += ` AND brandS.name LIKE ?`;
+          const  brandkeyword = `%${brand}%`
+        queryParamsValues.push(brandkeyword);
+        countParamsValues.push(brandkeyword);
+    }
+
+    // Filter by category
+    if (category_id) {
+        baseQuery += ` AND listings.category_id = ?`;
+        countQuery += ` AND listings.category_id = ?`;
+        queryParamsValues.push(category_id);
+        countParamsValues.push(category_id);
+    }
+
+    // Sort infor and pagination 
+    baseQuery += ` ORDER BY listings.created_at DESC LIMIT ? OFFSET ?`;
+    queryParamsValues.push(limit, offset);
+
+    //Execute a query to simultaneously retrieve the list and count the total number of records
+    const [listings] = await pool.query(baseQuery, queryParamsValues);
+    const [countResult] = await pool.query(countQuery, countParamsValues);
+
+    const totalItems = countResult[0].total;
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return {
+        data: listings,
+        pagination: {
+            totalItems,
+            totalPages,
+            currentPage: page,
+            limit
+        }
+    };
 }
