@@ -1,4 +1,4 @@
-import {createListingService,getListingServices,getListingByIdServices} from "../services/Listings_services.js";
+import {createListingService,getListingServices,getListingByIdServices,deletelistingServices,updateListingServices} from "../services/Listings_services.js";
   
  export const createListingController = async(req,res) =>{
     try {
@@ -57,6 +57,47 @@ export const getListingByIdController = async (req, res) => {
             return res.status(error.status || 500).json({
                 success: false,
                 message: error?.message || 'Internal Server Error'
+        });
+    }
+};
+
+export const updateListingController = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const updatedListing = await updateListingServices(id, req.body);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Update listing successfully!',
+            data: updatedListing
+        });
+    } catch (error) {
+        console.error("Lỗi tại updateListingController:", error);
+        
+        return res.status(error?.status || 500).json({
+            success: false,
+            message: error?.message || 'Internal Server Error'
+        });
+    }
+};
+
+export const deleteListingController = async (req, res) => { 
+    try {
+        const { id } = req.params;
+    
+        const result = await deletelistingServices(id);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Deleted listing successfully!',
+            data: result
+        });
+    } catch (error) {
+        
+        return res.status(error?.status || 500).json({ 
+            success: false,
+            message: error?.message || 'Internal Server Error'
         });
     }
 };

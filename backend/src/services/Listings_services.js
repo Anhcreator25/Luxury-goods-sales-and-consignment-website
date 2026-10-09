@@ -134,3 +134,42 @@ export const getListingByIdServices = async(id)=> {
           }
           return row[0];
 }
+
+//Update and Delete operations are reserved for sellers and administrators.
+
+// Update product
+export const updateListingServices = async (id, data) => {
+    const { title, condition_grade, original_price, selling_price, images, description } = data;
+    
+    const [existing] = await pool.query('SELECT * FROM listings WHERE id = ?', [id]);
+    
+    if (existing.length === 0) {
+        throw { status: 404, message: 'Listing not found' };
+    }
+
+    const query = `
+        UPDATE listings 
+        SET title = ?, condition_grade = ?, original_price = ?, selling_price = ?, images = ?, description = ? 
+        WHERE id = ?
+    `;
+    
+    await pool.query(query, [title, condition_grade, original_price, selling_price, images, description, id]);
+
+    const [updateRow] = await pool.query('SELECT * FROM listings WHERE id = ?', [id]);
+    return updateRow[0];
+};
+
+// Delete product
+export const deletelistingServices = async (id) => {
+    const [existing] = await pool.query('SELECT * FROM listings WHERE id = ?', [id]);
+    
+    if (existing.length === 0) {
+        throw { status: 404, message: 'Listing not found' };
+    }
+    
+    const query = 'UPDATE  listings SET status= "rejected"  WHERE id = ?';
+    await pool.query(query, [id]);
+    
+    return { message: "Listing deleted successfully" };
+};
+

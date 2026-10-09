@@ -1,42 +1,46 @@
 import jwt from 'jsonwebtoken'
 
+export const verifyToken = (req, res, next) => {
+    try {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
 
-export const verifyToken =(req,res,next)=>{
-    const authHeader =req.headers.authorization;
+        if (!token) {
+            return res.status(401).json({ success: false, message: 'not found token !' });
+        }
 
-    if(!authHeader || !authHeader.startsWith('Bearer ')){
-        return res.status(401).json({
-            sucess: false,
-            message: 'truy cập bị từ chối , ko tìm thấy token xác nhận'
+
+        jwt.verify(token, process.env.JWT_SECRECT, (err, decoded) => {
+            if (err) {
+                console.log("Error detail verify", err.message); 
+                return res.status(403).json({
+                    success: false,
+                    message: 'Token is invalid and not exist!',
+                    error: err.message
+                });
+            }
+
+            req.user = decoded; 
+            next();
         });
-    }
-    const token =authHeader.split(' ')[1];
-    try{
-        const decoded = jwt.verify(token, process.env.JWT_SECRECT);
 
-         req.user = decoded;
-
-         next();
-    }catch(error){
-        return res.status(403).json({
-            sucess: false,
-            message: 'Token không hợp lệ hoặc hết hạn'
-        })
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'Error server!' });
     }
-}
+};
 
 export const verifyRole =(allowedRoles)=>{
     return (req,res,next)=>{
         if(!req.user){
             return res.status(401).json({
                 success: false,
-                message: 'chưa xác thực thông tin người dùng'
+                message: 'User information not yet verified'
             });
         }
         if(!allowedRoles.includes(req.user.role)){
             return res.status(403).json({
                 success: false,
-                message: "bạn không có quyền thực hiện hành động này"
+                message: "You don't have permission to perform this action."
             });
         }
         next();
