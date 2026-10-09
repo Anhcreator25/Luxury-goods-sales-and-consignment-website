@@ -52,9 +52,10 @@ export const getListingServices = async (queryParams) => {
     const offset = (page - 1) * limit;
 
     let baseQuery = `
-        SELECT listings.*, brands.name AS brand_name
+        SELECT listings.*, brands.name AS brand_name,categories.name AS category_name
         FROM listings 
         LEFT JOIN brands ON listings.brand_id = brands.id
+        LEFT JOIN categories ON listings.category_id = categories.id
         WHERE 1=1
     `;
 
@@ -62,6 +63,7 @@ export const getListingServices = async (queryParams) => {
         SELECT COUNT(*) AS total 
         FROM listings 
         LEFT JOIN brands ON listings.brand_id = brands.id
+        LEFT JOIN categories ON listings.category_id = categories.id
         WHERE 1=1
     `;
     
@@ -114,4 +116,21 @@ export const getListingServices = async (queryParams) => {
             limit
         }
     };
+}
+
+//get a detail production by ID
+export const getListingByIdServices = async(id)=> {
+    
+    const query =`SELECT listings.*, brands.name AS brand_name, categories.name AS category_name
+                 FROM listings 
+                 LEFT JOIN brands ON listings.brand_id = brands.id 
+                 LEFT JOIN categories ON listings.category_id = categories.id 
+                 WHERE listings.id=?`;
+
+    const [row]= await pool.query(query,[id]);
+
+          if(row.length===0){
+            throw {status: 404 , message: "listings not found"}
+          }
+          return row[0];
 }

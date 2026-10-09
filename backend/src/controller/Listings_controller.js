@@ -1,4 +1,4 @@
-import {createListingService,getListingServices} from "../services/Listings_services.js";
+import {createListingService,getListingServices,getListingByIdServices} from "../services/Listings_services.js";
   
  export const createListingController = async(req,res) =>{
     try {
@@ -40,3 +40,23 @@ export const getListingController = async(req,res) =>{
 
 
 }
+
+export const getListingByIdController = async (req, res) => {
+    try {
+    
+        const id = req.params?.id;
+        const listing = await getListingByIdServices(id);
+        
+            return res.status(200).json({
+                 success: true,
+                 message: 'Get listing details successfully!',
+                 data: listing
+        });
+    } catch (error) {
+        
+            return res.status(error.status || 500).json({
+                success: false,
+                message: error?.message || 'Internal Server Error'
+        });
+    }
+};
