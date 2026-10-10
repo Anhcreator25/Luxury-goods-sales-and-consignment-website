@@ -96,8 +96,8 @@ export const getListingServices = async (queryParams) => {
     // Filter by brand
     if (brand) {
         baseQuery += ` AND brands.name LIKE ?`;
-        countQuery += ` AND brandsname LIKE ?`;
-          const  brandkeyword = `%${brand}%`
+        countQuery += ` AND brands.name LIKE ?`;
+        const  brandkeyword = `%${brand}%`
         queryParamsValues.push(brandkeyword);
         countParamsValues.push(brandkeyword);
     }
