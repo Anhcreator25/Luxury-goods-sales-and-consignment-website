@@ -4,7 +4,7 @@ import {verifyToken,verifyRole} from '../middlwares/authmiddlware.js';
 const router = express.Router();
  
 router.get('/',verifyToken,cartController.getCartController);
-router.post('/',verifyToken,verifyRole["buyer","seller"],cartController.addCartController);
-router.delete('/:id',verifyToken,verifyRole["buyer"],cartController.removeCartController);
+router.post('/',verifyToken,verifyRole(["buyer","seller"]),cartController.addCartController);
+router.delete('/:id',verifyToken,verifyRole(["buyer","seller"]),cartController.removeCartController);
 
 export default router;
