@@ -6,4 +6,5 @@ const router = express.Router();
 
 router.post('/',verifyToken,verifyRole(["seller","buyer"]),orderController.createOrderController);
 
+router.get('/',verifyToken,orderController.getOrdersController);
 export default router;

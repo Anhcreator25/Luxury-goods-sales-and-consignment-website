@@ -76,3 +76,66 @@ export const createOrderServices = async (userId, orderData,cartItemId)=> {
              connection.release();  
        }
 }
+
+//Buyers view their placed orders, while sellers view the list of orders requiring delivery.
+export const getOrderByRoleServices = async(user) => {
+       const connection = await pool.getConnection();
+   
+       try {
+           let query="";
+           let queryParams=[user.id];
+            // if user is seller
+           if(user.role ==="seller"){
+              query= `SELECT DISTINCT
+                        o.id AS order_id,
+                        o.total_amount,
+                        o.shipping_address,
+                        o.phone,
+                        o.payment_method,
+                        o.order_status,
+                        o.created_at
+                      FROM orders o 
+                      JOIN order_items oi ON o.id = oi.order_id
+                      JOIN listings l ON oi.listing_id= l.id
+                      WHERE l.seller_id =?
+                      ORDER BY o.created_at DESC `
+           }
+           //if user is buyer
+           else{
+             query =`SELECT DISTINCT
+                        o.id AS order_id,
+                        o.total_amount,
+                        o.shipping_address,
+                        o.phone,
+                        o.payment_method,
+                        o.order_status,
+                        o.created_at
+                      FROM orders o 
+                      WHERE o.buyer_id=?
+                      ORDER BY o.created_at DESC `;
+           }
+
+        const[orders] = await connection.query(query,queryParams);
+
+               //Go through each order to retrieve product details.   
+                for(let order of orders){
+                    const[items] = await connection.query(`
+                        SELECT 
+                           oi.id AS order_item_id,
+                           oi.quantity,
+                           oi.price,
+                           l.id as listing_id,
+                           l.title as product_title,
+                           l.seller_id as seller_id
+                        FROM order_items oi 
+                        JOIN listings l ON oi.listing_id = l.id
+                        WHERE oi.order_id =?`,[order.order_id]);
+                    order.items=items
+                }
+                return orders;
+
+       } finally {
+               connection.release();
+              
+       }
+}

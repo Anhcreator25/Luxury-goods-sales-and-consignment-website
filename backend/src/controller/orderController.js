@@ -1,4 +1,4 @@
-import { createOrderServices } from "../services/Order_services.js";
+import { createOrderServices,getOrderByRoleServices } from "../services/Order_services.js";
 
 export const createOrderController = async ( req, res) => {
     try {
@@ -30,3 +30,23 @@ export const createOrderController = async ( req, res) => {
         
     }
 }
+export const getOrdersController = async (req, res) => {
+    try {
+        
+        const user = req.user; 
+
+        const orders = await getOrderByRoleServices(user);
+
+        return res.status(200).json({
+            success: true,
+            count: orders.length,
+            message: "Get orders history successfully",
+            data: orders
+        });
+    } catch (error) {
+        return res.status(error.status || 500).json({
+            success: false,
+            message: error.message || "Internal server error while fetching orders"
+        });
+    }
+};
