@@ -1,8 +1,8 @@
 import pool from '../config/db.js'
 
-//Creating and post production
+// Creating and post production
 export const createListingService = async(sellerId, data)=>{
-    const{
+    const {
         category_id,
         title,
         brand_id,
@@ -11,65 +11,63 @@ export const createListingService = async(sellerId, data)=>{
         selling_price,
         images,
         description,
-    }=data;
+    } = data;
 
     if(!title || !selling_price || !category_id){
-        throw { status:400 , message:'Please fill in the title, selling price, and product category.'}
+        throw { status: 400, message: 'Please fill in the title, selling price, and product category.' }
     }
 
-    const query =
-    `INSERT INTO listings (seller_id, category_id, title,brand_id,condition_grade,original_price, selling_price, description ,status, created_at) 
-       VALUE (?,?,?,?,?,?,?,?,'active',NOW())`;
+    const query = `
+        INSERT INTO listings (seller_id, category_id, title, brand_id, condition_grade, original_price, selling_price, description, status, created_at) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+    `;
     
-    const [result]=await pool.query(query,[
+    const [result] = await pool.query(query, [
         sellerId,
         category_id,
         title,
         brand_id || null,
         condition_grade || 'LIKE_NEW (99%)',
-        original_price ||null,
+        original_price || null,
         selling_price,
         description || null,
     ]);
 
     const newListingId = result.insertId;
-    if(images && Array.isArray(images) && images.length>0){
-        const imageValues = images.map((url,index)=>[
+    if(images && Array.isArray(images) && images.length > 0){
+        const imageValues = images.map((url, index) => [
             newListingId,
             url,
-            index ===0? 1 : 0
+            index === 0 ? 1 : 0
         ]);
         
-        const imageQuery = `INSERT INTO listing_images (listing_id, image_url, is_primary)
-                            VALUE ?`;
-        await pool.query(imageQuery,[imageValues]);                    
-
+        const imageQuery = `INSERT INTO listing_images (listing_id, image_url, is_primary) VALUES ?`;
+        await pool.query(imageQuery, [imageValues]);                    
     }
 
     return {
-        id: result.insertId,
+        id: newListingId,
         seller_id: sellerId,
         ...data,
-        status : 'active',
+        status: 'pending',
         created_at: new Date()
     };
 }
 
-//Get production list include : Support finding ,filter list or price production and pagination
+// Get production list include : Support finding, filter list, price, status and pagination
 export const getListingServices = async (queryParams) => {
-    let { title, brand, category_id, page, limit } = queryParams;
+    let { title, brand, category_id, status, page, limit } = queryParams;
    
-    // Set default pagination
     page = parseInt(page) || 1;
     limit = parseInt(limit) || 10;
     const offset = (page - 1) * limit;
 
     let baseQuery = `
-        SELECT listings.*, brands.name AS brand_name,categories.name AS category_name, listing_images.image_url AS primary_image
+        SELECT listings.*, brands.name AS brand_name, categories.name AS category_name, listing_images.image_url AS primary_image
         FROM listings 
         LEFT JOIN brands ON listings.brand_id = brands.id
         LEFT JOIN categories ON listings.category_id = categories.id
-        LEFT JOIN listing_images ON listings.id = listing_images.listing_id AND listing_images.is_primary =1 
+        LEFT JOIN listing_images ON listings.id = listing_images.listing_id AND listing_images.is_primary = 1 
         WHERE 1=1
     `;
 
@@ -84,6 +82,13 @@ export const getListingServices = async (queryParams) => {
     const queryParamsValues = [];
     const countParamsValues = [];
 
+    //just take listing have status "active"
+    const targetStatus = status || 'active';
+    baseQuery += ` AND listings.status = ?`;
+    countQuery += ` AND listings.status = ?`;
+    queryParamsValues.push(targetStatus);
+    countParamsValues.push(targetStatus);
+
     // Filter by name 
     if (title) {
         baseQuery += ` AND listings.title LIKE ?`;
@@ -97,7 +102,7 @@ export const getListingServices = async (queryParams) => {
     if (brand) {
         baseQuery += ` AND brands.name LIKE ?`;
         countQuery += ` AND brands.name LIKE ?`;
-        const  brandkeyword = `%${brand}%`
+        const brandkeyword = `%${brand}%`;
         queryParamsValues.push(brandkeyword);
         countParamsValues.push(brandkeyword);
     }
@@ -110,11 +115,10 @@ export const getListingServices = async (queryParams) => {
         countParamsValues.push(category_id);
     }
 
-    // Sort infor and pagination 
+    // Sort info and pagination 
     baseQuery += ` ORDER BY listings.created_at DESC LIMIT ? OFFSET ?`;
     queryParamsValues.push(limit, offset);
 
-    //Execute a query to simultaneously retrieve the list and count the total number of records
     const [listings] = await pool.query(baseQuery, queryParamsValues);
     const [countResult] = await pool.query(countQuery, countParamsValues);
 
@@ -132,32 +136,32 @@ export const getListingServices = async (queryParams) => {
     };
 }
 
-//get a detail production by ID
-export const getListingByIdServices = async(id)=> {
-    
-    const query =`SELECT listings.*, brands.name AS brand_name, categories.name AS category_name
-                 FROM listings 
-                 LEFT JOIN brands ON listings.brand_id = brands.id 
-                 LEFT JOIN categories ON listings.category_id = categories.id 
-                 WHERE listings.id=?`;
+// Get a detail production by ID
+export const getListingByIdServices = async(id) => {
+    const query = `
+        SELECT listings.*, brands.name AS brand_name, categories.name AS category_name
+        FROM listings 
+        LEFT JOIN brands ON listings.brand_id = brands.id 
+        LEFT JOIN categories ON listings.category_id = categories.id 
+        WHERE listings.id = ? AND listings.status="active"
+    `;
 
-    const [row]= await pool.query(query,[id]);
+    const [row] = await pool.query(query, [id]);
 
-          if(row.length===0){
-            throw {status: 404 , message: "listings not found"}
-          }
+    if(row.length === 0){
+        throw { status: 404, message: "listings not found" };
+    }
     const listing = row[0];
-    const [images]= await pool.query(`SELECT id , image_url , is_primary FROM listing_images WHERE listing_id=?`,[id]);
-    listing.images=images;
+    const [images] = await pool.query(`SELECT id, image_url, is_primary FROM listing_images WHERE listing_id = ?`, [id]);
+    listing.images = images;
          
     return listing;
 }
 
-//Update and Delete operations are reserved for sellers and administrators.
-
-// Update product
+// Update product (when user edit product => update status -> pending to admin check)
 export const updateListingServices = async (id, data) => {
     const { title, condition_grade, original_price, selling_price, images, description } = data;
+    
     
     const [existing] = await pool.query('SELECT * FROM listings WHERE id = ?', [id]);
     
@@ -165,19 +169,67 @@ export const updateListingServices = async (id, data) => {
         throw { status: 404, message: 'Listing not found' };
     }
 
+    const currentListing = existing[0];
+
+    // If a field is not submitted (undefined), retain the previous value.
+    const updatedTitle = title !== undefined ? title : currentListing.title;
+    const updatedCondition = condition_grade !== undefined ? condition_grade : currentListing.condition_grade;
+    const updatedOriginalPrice = original_price !== undefined ? original_price : currentListing.original_price;
+    const updatedSellingPrice = selling_price !== undefined ? selling_price : currentListing.selling_price;
+    const updatedDescription = description !== undefined ? description : currentListing.description;
+
+    
     const query = `
         UPDATE listings 
-        SET title = ?, condition_grade = ?, original_price = ?, selling_price = ?, description = ? 
+        SET title = ?, condition_grade = ?, original_price = ?, selling_price = ?, description = ?, status = 'pending' 
         WHERE id = ?
     `;
     
-    await pool.query(query, [title, condition_grade, original_price, selling_price, description, id]);
+    await pool.query(query, [
+        updatedTitle, 
+        updatedCondition, 
+        updatedOriginalPrice, 
+        updatedSellingPrice, 
+        updatedDescription, 
+        id
+    ]);
 
+    
+    if (images && Array.isArray(images)) {
+        await pool.query('DELETE FROM listing_images WHERE listing_id = ?', [id]);
+        if (images.length > 0) {
+            const imageValues = images.map((url, index) => [
+                id,
+                url,
+                index === 0 ? 1 : 0
+            ]);
+            await pool.query('INSERT INTO listing_images (listing_id, image_url, is_primary) VALUES ?', [imageValues]);
+        }
+    }
+// Return the result after the update, including the list of images
     const [updateRow] = await pool.query('SELECT * FROM listings WHERE id = ?', [id]);
-    return updateRow[0];
+    const updatedListing = updateRow[0];
+    const [updatedImages] = await pool.query('SELECT id, image_url, is_primary FROM listing_images WHERE listing_id = ?', [id]);
+    updatedListing.images = updatedImages;
+
+    return updatedListing;
 };
 
-// Delete product
+// Admin will go through items  (status: 'active' or 'rejected')
+export const updateListingStatusService = async (id, status) => {
+    const [existing] = await pool.query('SELECT * FROM listings WHERE id = ?', [id]);
+    
+    if (existing.length === 0) {
+        throw { status: 404, message: 'Listing not found' };
+    }
+
+    const query = 'UPDATE listings SET status = ? WHERE id = ?';
+    await pool.query(query, [status, id]);
+    
+    return { message: `Listing status updated to '${status}' successfully` };
+};
+
+// Delete product (Soft delete)
 export const deletelistingServices = async (id) => {
     const [existing] = await pool.query('SELECT * FROM listings WHERE id = ?', [id]);
     
@@ -185,9 +237,8 @@ export const deletelistingServices = async (id) => {
         throw { status: 404, message: 'Listing not found' };
     }
     
-    const query = 'UPDATE  listings SET status= "rejected"  WHERE id = ?';
+    const query = 'UPDATE listings SET status = "rejected" WHERE id = ?';
     await pool.query(query, [id]);
     
     return { message: "Listing deleted successfully" };
 };
-
