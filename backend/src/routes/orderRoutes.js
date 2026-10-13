@@ -4,7 +4,7 @@ import { verifyToken,verifyRole } from '../middlwares/authmiddlware.js'
 
 const router = express.Router();
 
-router.post('/',verifyToken,verifyRole(["seller","buyer"]),orderController.createOrderController);
-
+router.post('/',verifyToken,verifyRole(["user"]),orderController.createOrderController);
 router.get('/',verifyToken,orderController.getOrdersController);
+
 export default router;
