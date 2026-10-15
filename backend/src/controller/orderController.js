@@ -1,4 +1,4 @@
-import { createOrderServices,getOrderByRoleServices } from "../services/Order_services.js";
+import { createOrderServices,getOrderByRoleServices,updatePaymentSuccessService } from "../services/Order_services.js";
 
 export const createOrderController = async ( req, res) => {
     try {
@@ -48,5 +48,24 @@ export const getOrdersController = async (req, res) => {
             success: false,
             message: error.message || "Internal server error while fetching orders"
         });
+    }
+};
+
+
+
+
+export const simulatePaymentSuccessController = async (req, res, next) => {
+    try {
+        const { orderId } = req.query; // get orderId in URL 
+        
+        if (!orderId) {
+            return res.status(400).json({ success: false, message: "Missing orderId" });
+        }
+
+        
+        const result = await updatePaymentSuccessService(orderId);
+        return res.status(200).json(result);
+    } catch (error) {
+        next(error);
     }
 };

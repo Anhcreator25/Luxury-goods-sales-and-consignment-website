@@ -6,5 +6,5 @@ const router = express.Router();
 
 router.post('/',verifyToken,verifyRole(["user"]),orderController.createOrderController);
 router.get('/',verifyToken,orderController.getOrdersController);
-
+router.get('/payment/simulate-checkout', orderController.simulatePaymentSuccessController);
 export default router;

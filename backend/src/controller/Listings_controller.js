@@ -4,7 +4,7 @@ import * as ListingServices from "../services/Listings_services.js";
 export const createListingController = async (req, res) => {
     try {
         const sellerid = req.user.id;
-        const newListing = await ListingServices.reateListingService(sellerid, req.body);
+        const newListing = await ListingServices.createListingService(sellerid, req.body);
 
         return res.status(201).json({
             success: true,
