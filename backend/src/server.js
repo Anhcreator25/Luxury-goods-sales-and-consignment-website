@@ -14,7 +14,7 @@ const app =express();
 app.use(cors());
 app.use(express.json());
 
-app.use('/api/user',userRoutes);
+app.use('/api/users',userRoutes);
 app.use('/api/listings',listingRoutes);
 app.use('/api/cart_items',cartRoutes)
 app.use('/api/orders',orderRoutes)

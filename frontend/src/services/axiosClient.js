@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosClient = axios.create({
-    baseURL: import.meta.env.API_URL,
+    baseURL: import.meta.env.VITE_API_URL,
     headers: {
         'Content-Type': 'application/json'
     }
@@ -24,7 +24,7 @@ axiosClient.interceptors.response.use(
         return reponse.data;
     },
     (error)=>{
-        return Promise.reject(error.reponse ? error.reponse.data : error.message)
+        return Promise.reject(error.response ? error.response.data : error.message)
     }
 );
 

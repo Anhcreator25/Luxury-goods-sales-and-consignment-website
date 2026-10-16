@@ -50,10 +50,6 @@ export const getOrdersController = async (req, res) => {
         });
     }
 };
-
-
-
-
 export const simulatePaymentSuccessController = async (req, res, next) => {
     try {
         const { orderId } = req.query; // get orderId in URL 

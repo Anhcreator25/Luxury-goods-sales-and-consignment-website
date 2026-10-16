@@ -1,6 +1,6 @@
 import pool from "../config/db.js";
 
-
+// Creat order from cart
 export const createOrderServices = async (userId, orderData,cartItemId)=> {
 
        if(!cartItemId || !Array.isArray(cartItemId)|| cartItemId.length===0){

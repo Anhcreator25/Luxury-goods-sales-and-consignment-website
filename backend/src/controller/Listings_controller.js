@@ -19,7 +19,6 @@ export const createListingController = async (req, res) => {
     }
 };
 
-
 export const getListingController = async (req, res) => {
     try {
         const result = await ListingServices.getListingServices(req.query);
@@ -38,7 +37,6 @@ export const getListingController = async (req, res) => {
     }
 };
 
-
 export const getListingByIdController = async (req, res) => {
     try {
         const id = req.params?.id;
@@ -56,7 +54,6 @@ export const getListingByIdController = async (req, res) => {
         });
     }
 };
-
 
 export const updateListingController = async (req, res) => {
     try {
@@ -78,7 +75,6 @@ export const updateListingController = async (req, res) => {
         });
     }
 };
-
 
 export const updateListingStatusController = async (req, res) => {
     try {
