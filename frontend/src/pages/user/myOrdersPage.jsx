@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
-import axiosClient from '../../services/axiosClient'
+import { orderServices } from '../../services'
 import { formatPrice, formatDate } from '../../utils/formatters'
 
 // Order lifecycle status mappings & styling
@@ -125,7 +125,7 @@ export default function MyOrdersPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await axiosClient.get('/orders')
+      const res = await orderServices.getOrders()
       const data = Array.isArray(res.data) ? res.data : (res.data?.orders || res.data?.data || [])
       setOrders(Array.isArray(data) ? data : [])
     } catch {

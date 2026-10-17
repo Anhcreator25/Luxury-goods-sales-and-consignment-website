@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
-import axiosClient from '../../services/axiosClient'
+import { orderServices, listingServices } from '../../services'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
@@ -45,8 +45,8 @@ export default function ProfilePage() {
   const fetchStats = async () => {
     try {
       const [ordersRes, productsRes] = await Promise.allSettled([
-        axiosClient.get('/orders'),
-        axiosClient.get('/listings/get_listing'),
+        orderServices.getOrders(),
+        listingServices.getListings(),
       ])
       if (ordersRes.status === 'fulfilled') {
         const d = ordersRes.value.data

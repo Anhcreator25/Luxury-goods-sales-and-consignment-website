@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
-import axiosClient from '../../services/axiosClient'
+import { cartServices, orderServices } from '../../services'
 import { formatPrice } from '../../utils/formatters'
 
 // Skeleton placeholder while cart items are loading
@@ -138,7 +138,7 @@ export default function CartPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await axiosClient.get('/cart_items')
+      const res = await cartServices.getCart()
       setCartItems(res.data?.data ?? res.data ?? [])
     } catch (err) {
       setError('Không thể tải giỏ hàng. Vui lòng thử lại.')
@@ -152,7 +152,7 @@ export default function CartPage() {
     setDeletingId(id)
     setError('')
     try {
-      await axiosClient.delete(`/cart_items/${id}`)
+      await cartServices.removeCartItem(id)
       setCartItems((prev) => prev.filter((item) => (item.cart_item_id || item.id) !== id))
     } catch (err) {
       setError('Không thể xóa sản phẩm. Vui lòng thử lại.')
@@ -182,7 +182,7 @@ export default function CartPage() {
         payment_method: form.paymentMethod,
         cartItemId: cartItems.map((i) => i.cart_item_id || i.id),
       }
-      const res = await axiosClient.post('/orders', payload)
+      const res = await orderServices.createOrder(payload)
       const id = res.data?.data?.id ?? res.data?.id ?? null
       setOrderId(id)
       setOrderSuccess(true)

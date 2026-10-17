@@ -4,7 +4,7 @@ import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import ConditionBadge from '../../components/ConditionBadge'
 import { formatPrice } from '../../utils/formatters'
-import axiosClient from '../../services/axiosClient'
+import { listingServices, cartServices } from '../../services'
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -27,7 +27,7 @@ export default function ProductDetailPage() {
     const fetchProduct = async () => {
       setLoading(true)
       try {
-        const res = await axiosClient.get(`/listings/get_listing/${id}`)
+        const res = await listingServices.getListingById(id)
         setProduct(res.data?.data || res.data || null)
       } catch (err) {
         console.error("Lỗi lấy chi tiết sản phẩm:", err)
@@ -39,9 +39,6 @@ export default function ProductDetailPage() {
     fetchProduct()
   }, [id])
 
-  // ── Quantity helpers ───────────────────────────────────────────────────────
-  const decrement = () => setQuantity((q) => Math.max(1, q - 1))
-  const increment = () => setQuantity((q) => Math.min(10, q + 1))
 
   // ── Add to cart ────────────────────────────────────────────────────────────
   const handleAddToCart = async () => {
@@ -55,11 +52,9 @@ export default function ProductDetailPage() {
 
     setCartLoading(true)
     try {
-      await axiosClient.post('/cart_items', {
-        listing_id: id,
-        quantity,
-      })
+      await cartServices.addToCart(id, quantity)
       setSuccess('Đã thêm vào giỏ hàng!')
+      window.dispatchEvent(new Event('cart-updated'))
     } catch (err) {
       setError(
         err?.response?.data?.message || 'Không thể thêm vào giỏ hàng. Vui lòng thử lại.'
@@ -81,10 +76,8 @@ export default function ProductDetailPage() {
 
     setCartLoading(true)
     try {
-      await axiosClient.post('/cart_items', {
-        listing_id: id,
-        quantity,
-      })
+      await cartServices.addToCart(id, quantity)
+      window.dispatchEvent(new Event('cart-updated'))
       navigate('/cart')
     } catch (err) {
       setError(

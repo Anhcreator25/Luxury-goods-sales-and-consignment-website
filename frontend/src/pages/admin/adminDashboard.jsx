@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
-import axiosClient from '../../services/axiosClient'
+import { orderServices, listingServices } from '../../services'
 import { formatPrice } from '../../utils/formatters'
 
 // Navigation tab identifiers
@@ -61,8 +61,8 @@ export default function AdminDashboard() {
     setLoadingStats(true)
 
     Promise.allSettled([
-      axiosClient.get('/orders'),
-      axiosClient.get('/listings/get_listing'),
+      orderServices.getOrders(),
+      listingServices.getListings(),
     ]).then(([ordersRes, listingsRes]) => {
       // orders
       if (ordersRes.status === 'fulfilled') {
@@ -95,7 +95,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (activeTab !== 'listings' || !isAdmin) return
     setLoadingListings(true)
-    axiosClient.get('/listings/get_listing?status=pending')
+    listingServices.getListings({ status: 'pending' })
       .then(res => {
         const data = res.data?.data ?? res.data?.listings ?? res.data ?? []
         setPending(Array.isArray(data) ? data : [])
@@ -108,7 +108,7 @@ export default function AdminDashboard() {
   const handleListingAction = async (id, newStatus) => {
     setListingBanner(null)
     try {
-      await axiosClient.put(`/listings/admin/listing/${id}/status`, { status: newStatus })
+      await listingServices.updateListingStatus(id, newStatus)
       setPending(prev => prev.filter(l => (l.id ?? l._id) !== id))
       setListingBanner({
         type: 'success',

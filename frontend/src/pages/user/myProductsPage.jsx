@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
-import axiosClient from '../../services/axiosClient'
+import { listingServices } from '../../services'
 import { formatPrice } from '../../utils/formatters'
 
 // Listing consignment approval status badges
@@ -101,9 +101,7 @@ export default function MyProductsPage() {
       })()
 
       // Lấy danh sách sản phẩm và chỉ giữ lại sản phẩm do chính tài khoản này ký gửi
-      const res = await axiosClient.get('/listings/get_listing', {
-        params: { limit: 100 }
-      })
+      const res = await listingServices.getListings({ limit: 100 })
       const data = Array.isArray(res.data) ? res.data : (res.data?.listings || res.data?.data || [])
       
       const myItems = Array.isArray(data) 
@@ -142,7 +140,7 @@ export default function MyProductsPage() {
   const handleDeleteConfirm = async (id) => {
     setDeleting(true)
     try {
-      await axiosClient.delete(`/listings/delete/${id}`)
+      await listingServices.deleteListing(id)
       setProducts(prev => prev.filter(p => (p.id || p._id) !== id))
       setConfirmDeleteId(null)
     } catch {
@@ -186,10 +184,10 @@ export default function MyProductsPage() {
     setSubmitting(true)
     try {
       if (isUpdateMode && editId) {
-        await axiosClient.put(`/listings/update/${editId}`, payload)
+        await listingServices.updateListing(editId, payload)
         setFormSuccess('Sản phẩm đã được cập nhật thành công!')
       } else {
-        await axiosClient.post('/listings/create_listing', payload)
+        await listingServices.createListing(payload)
         setFormSuccess('Sản phẩm đã được gửi duyệt! Chúng tôi sẽ kiểm duyệt trong 24h.')
       }
       setForm(EMPTY_FORM)

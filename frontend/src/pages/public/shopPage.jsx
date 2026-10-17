@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import ProductCard from '../../components/ProductCard';
 import Footer from '../../components/Footer';
-import axiosClient from '../../services/axiosClient';
+import { listingServices } from '../../services';
 
 // ---------------------------------------------------------------------------
 // Category map: display name → API category_id (Khớp chuẩn Database MySQL)
@@ -111,7 +111,7 @@ export default function ShopPage() {
       if (catId !== null) params.category_id = catId;
       if (titleQuery && titleQuery.trim() !== '') params.title = titleQuery.trim();
 
-      const res = await axiosClient.get('/listings/get_listing', { params });
+      const res = await listingServices.getListings(params);
       const data = res.data?.data || res.data || [];
       setProducts(Array.isArray(data) ? data : []);
     } catch (err) {

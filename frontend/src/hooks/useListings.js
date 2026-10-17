@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import axiosClient from '../services/axiosClient';
+import { listingServices } from '../services';
 
 /**
  * Custom hook to fetch luxury product listings with filtering, sorting, and manual refetch.
@@ -10,13 +10,13 @@ export function useListings(initialParams = { status: 'active' }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Fetch listings from the remote backend with merged filters
+  // Fetch listings from the remote backend with merged filters via listingServices
   const fetchListings = useCallback(async (customParams = {}) => {
     setLoading(true);
     setError('');
     try {
       const mergedParams = { ...initialParams, ...customParams };
-      const res = await axiosClient.get('/listings/get_listing', { params: mergedParams });
+      const res = await listingServices.getListings(mergedParams);
       const data = res.data?.data ?? res.data ?? [];
       setProducts(Array.isArray(data) ? data : []);
     } catch (err) {

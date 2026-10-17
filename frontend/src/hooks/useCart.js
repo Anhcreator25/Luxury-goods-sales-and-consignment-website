@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import axiosClient from '../services/axiosClient';
+import { cartServices } from '../services';
 
 /**
  * Custom hook to manage shopping cart state, remote API synchronization,
@@ -12,7 +12,7 @@ export function useCart() {
 
   const token = localStorage.getItem('token');
 
-  // Fetch all cart items from backend
+  // Fetch all cart items from backend via cartServices
   const fetchCart = useCallback(async () => {
     if (!token) {
       setCartItems([]);
@@ -22,7 +22,7 @@ export function useCart() {
     setLoading(true);
     setError('');
     try {
-      const res = await axiosClient.get('/cart_items');
+      const res = await cartServices.getCart();
       const items = res.data?.data ?? res.data ?? [];
       setCartItems(Array.isArray(items) ? items : []);
     } catch (err) {
@@ -42,10 +42,7 @@ export function useCart() {
 
   const addToCart = async (listingId, quantity = 1) => {
     try {
-      const res = await axiosClient.post('/cart_items', {
-        listing_id: listingId,
-        quantity,
-      });
+      const res = await cartServices.addToCart(listingId, quantity);
       await fetchCart();
       window.dispatchEvent(new Event('cart-updated'));
       return { success: true, data: res.data };
@@ -57,7 +54,7 @@ export function useCart() {
 
   const removeFromCart = async (cartItemId) => {
     try {
-      await axiosClient.delete(`/cart_items/${cartItemId}`);
+      await cartServices.removeCartItem(cartItemId);
       setCartItems((prev) => prev.filter((item) => (item.cart_item_id || item.id) !== cartItemId));
       window.dispatchEvent(new Event('cart-updated'));
       return { success: true };

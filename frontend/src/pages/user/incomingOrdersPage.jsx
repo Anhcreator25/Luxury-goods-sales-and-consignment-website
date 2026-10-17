@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
-import axiosClient from '../../services/axiosClient'
+import Footer from '../../components/Footer'
+import { orderServices } from '../../services'
 
 const formatPrice = (p) => Number(p).toLocaleString('vi-VN') + ' ₫'
 const formatDate = (d) => new Date(d).toLocaleDateString('vi-VN')
@@ -146,7 +147,7 @@ export default function IncomingOrdersPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await axiosClient.get('/orders')
+      const res = await orderServices.getOrders()
       const data = Array.isArray(res.data) ? res.data : (res.data?.orders || res.data?.data || [])
       setOrders(Array.isArray(data) ? data : [])
     } catch {
@@ -236,6 +237,9 @@ export default function IncomingOrdersPage() {
           </div>
         )}
       </div>
+
+      {/* Global Footer */}
+      <Footer />
     </div>
   )
 }
