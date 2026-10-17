@@ -1,21 +1,43 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import LoginPage from './pages/loginPage';
-import RegisterPage from './pages/registerPage';
-import HomePage from './pages/homePage';
+
+// Pages imported cleanly from domain folders via index.js
+import {
+  HomePage,
+  ShopPage,
+  ProductDetailPage,
+  LoginPage,
+  RegisterPage,
+  CartPage,
+  MyOrdersPage,
+  MyProductsPage,
+  IncomingOrdersPage,
+  ProfilePage,
+  AdminDashboard,
+} from './pages';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Đường dẫn tới trang Chủ */}
+        {/* ── Public Routes ── */}
         <Route path="/" element={<HomePage />} />
+        <Route path="/shop" element={<ShopPage />} />
+        <Route path="/product/:id" element={<ProductDetailPage />} />
 
-        {/* Đường dẫn tới trang Đăng nhập */}
+        {/* ── Auth Routes ── */}
         <Route path="/login" element={<LoginPage />} />
-
-        {/* Đường dẫn tới trang Đăng ký */}
         <Route path="/register" element={<RegisterPage />} />
+
+        {/* ── User Dashboard Routes ── */}
+        <Route path="/cart" element={<CartPage />} />
+        <Route path="/my-orders" element={<MyOrdersPage />} />
+        <Route path="/my-products" element={<MyProductsPage />} />
+        <Route path="/incoming-orders" element={<IncomingOrdersPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+
+        {/* ── Admin Routes ── */}
+        <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     </BrowserRouter>
   );
