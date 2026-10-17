@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import ConditionBadge from '../../components/ConditionBadge'
-import { formatPrice } from '../../utils/formatters'
+import { formatPrice, CONDITION_MAP } from '../../utils/formatters'
 import { listingServices, cartServices } from '../../services'
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -17,7 +17,6 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeImage, setActiveImage] = useState(0)
-  const [quantity, setQuantity] = useState(1)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [cartLoading, setCartLoading] = useState(false)
@@ -52,13 +51,16 @@ export default function ProductDetailPage() {
 
     setCartLoading(true)
     try {
-      await cartServices.addToCart(id, quantity)
+      await cartServices.addToCart(id, 1)
       setSuccess('Đã thêm vào giỏ hàng!')
       window.dispatchEvent(new Event('cart-updated'))
     } catch (err) {
-      setError(
-        err?.response?.data?.message || 'Không thể thêm vào giỏ hàng. Vui lòng thử lại.'
-      )
+      const errorMsg =
+        (typeof err === 'string' ? err : null) ||
+        err?.message ||
+        err?.response?.data?.message ||
+        'Không thể thêm vào giỏ hàng. Vui lòng thử lại.'
+      setError(errorMsg)
     } finally {
       setCartLoading(false)
     }
@@ -80,9 +82,12 @@ export default function ProductDetailPage() {
       window.dispatchEvent(new Event('cart-updated'))
       navigate('/cart')
     } catch (err) {
-      setError(
-        err?.response?.data?.message || 'Không thể thêm vào giỏ hàng. Vui lòng thử lại.'
-      )
+      const errorMsg =
+        (typeof err === 'string' ? err : null) ||
+        err?.message ||
+        err?.response?.data?.message ||
+        'Không thể thêm vào giỏ hàng. Vui lòng thử lại.'
+      setError(errorMsg)
       setCartLoading(false)
     }
   }
@@ -136,8 +141,8 @@ export default function ProductDetailPage() {
   const hasImages = images.length > 0
   const mainImageSrc = hasImages ? images[activeImage] : null
 
-  const badgeLabel = conditionBadge[product?.condition_grade] ?? product?.condition_grade
-  const badgeClass = conditionColor[product?.condition_grade] ?? 'bg-gray-50 text-gray-600 border-gray-200'
+  const conditionInfo = CONDITION_MAP[product?.condition_grade] || { label: product?.condition_grade || 'Tiêu chuẩn' }
+  const badgeLabel = conditionInfo.label
 
   return (
     <div className="min-h-screen bg-[#FBFBFA]">
@@ -355,13 +360,7 @@ export default function ProductDetailPage() {
               >
                 {cartLoading ? 'Đang xử lý...' : 'Thêm Vào Giỏ Hàng'}
               </button>
-              <button
-                onClick={handleBuyNow}
-                disabled={cartLoading}
-                className="w-full py-4 border border-[#111111] text-[#111111] text-sm font-mono uppercase tracking-wider hover:bg-[#F5F5F4] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Mua Ngay
-              </button>
+             
             </div>
 
           </div>

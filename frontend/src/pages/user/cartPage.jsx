@@ -188,7 +188,9 @@ export default function CartPage() {
       setOrderSuccess(true)
     } catch (err) {
       const msg =
-        err?.response?.data?.message ??
+        (typeof err === 'string' ? err : null) ||
+        err?.message ||
+        err?.response?.data?.message ||
         'Đặt hàng thất bại. Vui lòng kiểm tra lại thông tin.'
       setError(msg)
     } finally {
