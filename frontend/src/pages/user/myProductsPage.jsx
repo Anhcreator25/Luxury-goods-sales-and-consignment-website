@@ -121,27 +121,48 @@ export default function MyProductsPage() {
     }
   }
 
-  const handleEdit = (product) => {
-    // product.images is [{id, image_url, is_primary}] from backend
-    const urls = Array.isArray(product.images) && product.images.length > 0
-      ? product.images.map(img => (typeof img === 'string' ? img : img.image_url)).filter(Boolean)
-      : (product.image_url ? [product.image_url] : [''])
+  const handleEdit = async (product) => {
+    const pid = product.id || product._id
+    const fallbackImg = product.primary_image || product.image_url || ''
 
     setForm({
       title:           product.title || '',
       brand:           product.brand || '',
+      brand_id:        product.brand_id || null,
       description:     product.description || '',
       price:           product.selling_price ?? '',
       original_price:  product.original_price ?? '',
       category_id:     product.category_id || 1,
-      condition_grade: product.condition_grade || 'EXCELLENT',
-      imageUrls:       urls.length > 0 ? urls : [''],
+      condition_grade: product.condition_grade || 'Excellent (97%)',
+      imageUrls:       fallbackImg ? [fallbackImg] : [''],
     })
-    setEditId(product.id || product._id)
+    setEditId(pid)
     setIsUpdateMode(true)
     setFormError('')
     setFormSuccess('')
     setActiveTab('form')
+
+    // Fetch full listing details to get all images from listing_images table
+    try {
+      const res = await listingServices.getListingById(pid)
+      const detail = res.data?.data || res.data || {}
+      if (Array.isArray(detail.images) && detail.images.length > 0) {
+        const fullUrls = detail.images
+          .map(img => (typeof img === 'string' ? img : img.image_url))
+          .filter(Boolean)
+
+        if (fullUrls.length > 0) {
+          setForm(prev => ({
+            ...prev,
+            imageUrls: fullUrls,
+            brand_id: detail.brand_id || prev.brand_id,
+            description: detail.description || prev.description,
+          }))
+        }
+      }
+    } catch (err) {
+      console.error('Không thể lấy chi tiết ảnh sản phẩm:', err)
+    }
   }
 
   const handleDeleteClick = (id) => {
@@ -299,8 +320,9 @@ export default function MyProductsPage() {
                         {/* Image — backend returns images as [{id, image_url, is_primary}] */}
                         <div className="w-16 h-16 bg-[#F0F0EE] border border-[#E5E5E3] flex-shrink-0 overflow-hidden">
                           {(() => {
-                            const img = product.images?.[0]
-                            const src = typeof img === 'string' ? img : img?.image_url
+                          
+                            const src = product.primary_image || product.image_url ||
+                                        (typeof product.images?.[0]==='string'? product.images[0] : product.images?.[0]?.image_url);
                             return src ? (
                               <img
                                 src={src}
