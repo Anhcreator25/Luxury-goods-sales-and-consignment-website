@@ -40,7 +40,7 @@ export const getListingController = async (req, res) => {
 export const getListingByIdController = async (req, res) => {
     try {
         const id = req.params?.id;
-        const listing = await ListingServices.getListingByIdServices(id);
+        const listing = await ListingServices.getListingByIdServices(id, req.user);
 
         return res.status(200).json({
             success: true,

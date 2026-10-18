@@ -146,14 +146,16 @@ export const getListingServices = async (queryParams) => {
     };
 }
 
-// Get a detail production by ID
-export const getListingByIdServices = async(id) => {
+// Get a detail production by ID with security check
+export const getListingByIdServices = async(id, requester = null) => {
     const query = `
-        SELECT listings.*, brands.name AS brand_name, categories.name AS category_name
+        SELECT listings.*, brands.name AS brand_name, categories.name AS category_name,
+               users.name AS seller_name
         FROM listings 
         LEFT JOIN brands ON listings.brand_id = brands.id 
         LEFT JOIN categories ON listings.category_id = categories.id 
-        WHERE listings.id = ? AND listings.status="active"
+        LEFT JOIN users ON listings.seller_id = users.id
+        WHERE listings.id = ?
     `;
 
     const [row] = await pool.query(query, [id]);
@@ -161,7 +163,31 @@ export const getListingByIdServices = async(id) => {
     if(row.length === 0){
         throw { status: 404, message: "listings not found" };
     }
+    
     const listing = row[0];
+
+    // Security check: if listing is not active, only its seller or an admin can view it
+    if (listing.status !== 'active') {
+        const isOwner = requester && Number(requester.id) === Number(listing.seller_id);
+        const isAdmin = requester && requester.role === 'admin';
+
+        if (!isOwner && !isAdmin) {
+            throw { status: 404, message: "listings not found" };
+        }
+    }
+
+    // For admin requests only: attach seller contact details (phone & email)
+    if (requester && requester.role === 'admin') {
+        const [sellerInfo] = await pool.query(
+            `SELECT email, phone FROM users WHERE id = ?`,
+            [listing.seller_id]
+        );
+        if (sellerInfo.length > 0) {
+            listing.seller_email = sellerInfo[0].email;
+            listing.seller_phone = sellerInfo[0].phone;
+        }
+    }
+
     const [images] = await pool.query(`SELECT id, image_url, is_primary FROM listing_images WHERE listing_id = ?`, [id]);
     listing.images = images;
          

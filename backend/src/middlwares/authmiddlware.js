@@ -46,3 +46,24 @@ export const verifyRole =(allowedRoles)=>{
         next();
     }
 }
+
+// Optional Auth: if authorization token is provided, decode and attach user to req.user. If not, proceed as guest.
+export const optionalAuth = (req, res, next) => {
+    try {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+
+        if (token) {
+            jwt.verify(token, process.env.JWT_SECRECT, (err, decoded) => {
+                if (!err) {
+                    req.user = decoded;
+                }
+                next();
+            });
+        } else {
+            next();
+        }
+    } catch {
+        next();
+    }
+};
