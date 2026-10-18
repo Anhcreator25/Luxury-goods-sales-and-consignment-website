@@ -56,7 +56,7 @@ export const createListingService = async(sellerId, data)=>{
 
 // Get production list include : Support finding, filter list, price, status and pagination
 export const getListingServices = async (queryParams) => {
-    let { title, brand, category_id, status, page, limit } = queryParams;
+    let { title, brand, category_id, seller_id, status, page, limit } = queryParams;
    
     page = parseInt(page) || 1;
     limit = parseInt(limit) || 10;
@@ -82,12 +82,22 @@ export const getListingServices = async (queryParams) => {
     const queryParamsValues = [];
     const countParamsValues = [];
 
-    //just take listing have status "active"
-    const targetStatus = status || 'active';
-    baseQuery += ` AND listings.status = ?`;
-    countQuery += ` AND listings.status = ?`;
-    queryParamsValues.push(targetStatus);
-    countParamsValues.push(targetStatus);
+    // Filter by status: if status is explicitly 'all', do not filter by status. Otherwise default to 'active' or given status
+    if (status !== 'all') {
+        const targetStatus = status || 'active';
+        baseQuery += ` AND listings.status = ?`;
+        countQuery += ` AND listings.status = ?`;
+        queryParamsValues.push(targetStatus);
+        countParamsValues.push(targetStatus);
+    }
+
+    // Filter by seller_id
+    if (seller_id) {
+        baseQuery += ` AND listings.seller_id = ?`;
+        countQuery += ` AND listings.seller_id = ?`;
+        queryParamsValues.push(seller_id);
+        countParamsValues.push(seller_id);
+    }
 
     // Filter by name 
     if (title) {

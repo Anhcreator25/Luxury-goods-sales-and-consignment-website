@@ -7,10 +7,10 @@ import { formatPrice } from '../../utils/formatters'
 
 // Listing consignment approval status badges
 const STATUS_BADGE = {
-  pending:  { label: 'Đang Duyệt', cls: 'bg-amber-50 text-amber-700 border border-amber-200' },
-  active:   { label: 'Đang Bán',   cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200' },
-  sold:     { label: 'Đã Bán',     cls: 'bg-gray-100 text-gray-600 border border-gray-200' },
-  rejected: { label: 'Bị Từ Chối', cls: 'bg-red-50 text-red-700 border border-red-200' },
+  pending:  { label: 'Đang Chờ Xét Duyệt', cls: 'bg-amber-50 text-amber-700 border border-amber-200' },
+  active:   { label: 'Đang Bán',           cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200' },
+  sold:     { label: 'Đã Bán',             cls: 'bg-gray-100 text-gray-600 border border-gray-200' },
+  rejected: { label: 'Bị Từ Chối',         cls: 'bg-red-50 text-red-700 border border-red-200' },
 }
 
 const CATEGORIES = [
@@ -101,8 +101,12 @@ export default function MyProductsPage() {
         try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} }
       })()
 
-      // Lấy danh sách sản phẩm và chỉ giữ lại sản phẩm do chính tài khoản này ký gửi
-      const res = await listingServices.getListings({ limit: 100 })
+      // Lấy tất cả sản phẩm của chính tài khoản này (bao gồm cả 'pending', 'active', 'rejected', 'sold')
+      const queryParams = { status: 'all', limit: 100 }
+      if (currentUser.id) {
+        queryParams.seller_id = currentUser.id
+      }
+      const res = await listingServices.getListings(queryParams)
       const data = Array.isArray(res.data) ? res.data : (res.data?.listings || res.data?.data || [])
       
       const myItems = Array.isArray(data) 
@@ -127,7 +131,8 @@ export default function MyProductsPage() {
       title:           product.title || '',
       brand:           product.brand || '',
       description:     product.description || '',
-      price:           product.price || '',
+      price:           product.selling_price ?? '',
+      original_price:  product.original_price ?? '',
       category_id:     product.category_id || 1,
       condition_grade: product.condition_grade || 'EXCELLENT',
       imageUrls:       urls.length > 0 ? urls : [''],
@@ -323,7 +328,7 @@ export default function MyProductsPage() {
                         {/* Price */}
                         <div className="text-right flex-shrink-0 hidden sm:block">
                           <p className="text-xs text-[#888888] font-mono uppercase tracking-wider">Giá</p>
-                          <p className="text-sm font-bold text-[#111111]">{formatPrice(product.price)}</p>
+                          <p className="text-sm font-bold text-[#111111]">{formatPrice(product.selling_price)}</p>
                         </div>
 
                         {/* Actions */}
