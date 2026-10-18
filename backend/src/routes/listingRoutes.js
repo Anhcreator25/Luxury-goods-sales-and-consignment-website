@@ -1,9 +1,10 @@
 import express from 'express'
 import * as listingController from '../controller/Listings_controller.js'
 import { verifyToken ,verifyRole } from '../middlwares/authmiddlware.js';
+import { createItemsLimiter } from '../middlwares/rateLimiter.js';
 const router = express.Router();
  
-router.post('/create_listing',verifyToken,verifyRole(["user"]),listingController.createListingController);
+router.post('/create_listing',verifyToken,verifyRole(["user"]),createItemsLimiter,listingController.createListingController);
 router.get('/get_listing',listingController.getListingController);
 router.get('/get_listing/:id',listingController.getListingByIdController);
 router.put('/update/:id',verifyToken,verifyRole(["user","admin"]),listingController.updateListingController);
