@@ -42,7 +42,8 @@ const BRAND_OPTIONS = [
 
 const EMPTY_FORM = {
   title: '', brand: 'Gucci', brand_id: 4, description: '', price: '', original_price: '',
-  category_id: 1, condition_grade: 'Excellent (97%)', imageUrl: '',
+  category_id: 1, condition_grade: 'Excellent (97%)',
+  imageUrls: [''], // array of image URL strings, up to 5
 }
 
 function StatusBadge({ status }) {
@@ -117,6 +118,11 @@ export default function MyProductsPage() {
   }
 
   const handleEdit = (product) => {
+    // product.images is [{id, image_url, is_primary}] from backend
+    const urls = Array.isArray(product.images) && product.images.length > 0
+      ? product.images.map(img => (typeof img === 'string' ? img : img.image_url)).filter(Boolean)
+      : (product.image_url ? [product.image_url] : [''])
+
     setForm({
       title:           product.title || '',
       brand:           product.brand || '',
@@ -124,7 +130,7 @@ export default function MyProductsPage() {
       price:           product.price || '',
       category_id:     product.category_id || 1,
       condition_grade: product.condition_grade || 'EXCELLENT',
-      imageUrl:        (product.images && product.images[0]) || product.image_url || '',
+      imageUrls:       urls.length > 0 ? urls : [''],
     })
     setEditId(product.id || product._id)
     setIsUpdateMode(true)
@@ -178,7 +184,7 @@ export default function MyProductsPage() {
       original_price:  originalPriceNum,
       category_id:     Number(form.category_id),
       condition_grade: form.condition_grade || 'Excellent (97%)',
-      images:          form.imageUrl.trim() ? [form.imageUrl.trim()] : [],
+      images:          form.imageUrls.filter(url => url.trim() !== ''),
     }
 
     setSubmitting(true)
@@ -285,20 +291,24 @@ export default function MyProductsPage() {
                   return (
                     <div key={pid} className="border border-[#E5E5E3] bg-white hover:border-[#111111] transition-colors duration-150">
                       <div className="flex items-center gap-4 p-4">
-                        {/* Image */}
+                        {/* Image — backend returns images as [{id, image_url, is_primary}] */}
                         <div className="w-16 h-16 bg-[#F0F0EE] border border-[#E5E5E3] flex-shrink-0 overflow-hidden">
-                          {product.images?.[0] || product.image_url ? (
-                            <img
-                              src={product.images?.[0] || product.image_url}
-                              alt={product.title}
-                              className="w-full h-full object-cover"
-                              onError={(e) => { e.target.style.display = 'none' }}
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <span className="text-[#CCCCCC] text-xl">◻</span>
-                            </div>
-                          )}
+                          {(() => {
+                            const img = product.images?.[0]
+                            const src = typeof img === 'string' ? img : img?.image_url
+                            return src ? (
+                              <img
+                                src={src}
+                                alt={product.title}
+                                className="w-full h-full object-cover"
+                                onError={(e) => { e.target.style.display = 'none' }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <span className="text-[#CCCCCC] text-xl">◻</span>
+                              </div>
+                            )
+                          })()}
                         </div>
 
                         {/* Info */}
@@ -528,19 +538,83 @@ export default function MyProductsPage() {
                 </div>
               </div>
 
-              {/* URL ảnh */}
+              {/* Image URLs — supports up to 5 URLs */}
               <div>
-                <label className="block text-xs font-mono uppercase tracking-wider text-[#444444] mb-1.5">
-                  URL Ảnh Sản Phẩm
-                </label>
-                <input
-                  type="url"
-                  name="imageUrl"
-                  value={form.imageUrl}
-                  onChange={handleFormChange}
-                  placeholder="https://example.com/product-image.jpg"
-                  className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#111111] transition-colors duration-150"
-                />
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-mono uppercase tracking-wider text-[#444444]">
+                    Ảnh Sản Phẩm <span className="text-[#888888] normal-case">(tối đa 5 ảnh)</span>
+                  </label>
+                  <span className="text-[10px] font-mono text-[#AAAAAA]">
+                    {form.imageUrls.filter(u => u.trim()).length} / 5
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  {form.imageUrls.map((url, idx) => (
+                    <div key={idx} className="flex gap-2 items-center">
+                      {/* Index badge */}
+                      <span className="w-5 text-[10px] font-mono text-[#AAAAAA] text-center flex-shrink-0">
+                        {idx + 1}
+                      </span>
+                      <input
+                        type="url"
+                        value={url}
+                        onChange={(e) => {
+                          const updated = [...form.imageUrls]
+                          updated[idx] = e.target.value
+                          setForm(prev => ({ ...prev, imageUrls: updated }))
+                        }}
+                        placeholder={idx === 0 ? 'Ảnh chính — https://...' : `Ảnh phụ ${idx + 1} — https://...`}
+                        className="flex-1 border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#111111] transition-colors duration-150"
+                      />
+                      {/* Remove button — keep at least 1 row */}
+                      {form.imageUrls.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = form.imageUrls.filter((_, i) => i !== idx)
+                            setForm(prev => ({ ...prev, imageUrls: updated }))
+                          }}
+                          className="w-8 h-8 flex-shrink-0 border border-[#E5E5E3] flex items-center justify-center text-[#888888] hover:border-[#D93838] hover:text-[#D93838] transition-colors duration-150 text-sm"
+                          title="Xóa ảnh này"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add image button — only when fewer than 5 */}
+                {form.imageUrls.length < 5 && (
+                  <button
+                    type="button"
+                    onClick={() => setForm(prev => ({ ...prev, imageUrls: [...prev.imageUrls, ''] }))}
+                    className="mt-2 w-full border border-dashed border-[#E5E5E3] py-2 text-xs font-mono uppercase tracking-wider text-[#888888] hover:border-[#111111] hover:text-[#111111] transition-colors duration-150"
+                  >
+                    + Thêm Ảnh
+                  </button>
+                )}
+
+                {/* Preview thumbnails for filled URLs */}
+                {form.imageUrls.some(u => u.trim()) && (
+                  <div className="mt-3 flex gap-2 flex-wrap">
+                    {form.imageUrls.filter(u => u.trim()).map((url, idx) => (
+                      <div
+                        key={idx}
+                        className="w-14 h-14 border border-[#E5E5E3] overflow-hidden bg-[#F0F0EE]"
+                        title={`Ảnh ${idx + 1}`}
+                      >
+                        <img
+                          src={url}
+                          alt={`Preview ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => { e.target.style.display = 'none' }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Submit */}
