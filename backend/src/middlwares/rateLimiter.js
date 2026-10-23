@@ -33,3 +33,14 @@ export const createItemsLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false
 })
+
+export const cancelItemslimiter = rateLimit({
+    windowMs:  24*60*60*1000,// 1 day
+    max: 3,
+    message: {
+        success: false,
+        message: "You have reached the daily limit of 5 product listings. Please come back tomorrow!"
+    },
+    standardHeaders: true,
+    legacyHeaders: false
+})
