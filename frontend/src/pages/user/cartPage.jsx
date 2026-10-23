@@ -49,53 +49,33 @@ const OrderSummary = ({ cartItems, onProceed, proceedLabel, children }) => {
         Tóm Tắt Đơn Hàng
       </h2>
 
-      {/* Item list */}
-      <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-        {cartItems.map((item) => {
-          const itemId = item.cart_item_id || item.id
-          const listing = item.listing ?? item
-          const price = item.selling_price ?? listing?.selling_price ?? listing?.price ?? item.price ?? 0
-          return (
-            <div key={itemId} className="flex justify-between items-start gap-2 text-sm">
-              <span className="text-[#111111] leading-tight line-clamp-2 flex-1">
-                {listing?.title ?? item.title ?? 'Sản phẩm'}
-              </span>
-              <span className="text-[#444444] whitespace-nowrap font-mono text-xs">
-                {formatPrice(price)}
-              </span>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Totals */}
-      <div className="border-t border-[#E5E5E3] pt-4 space-y-2 text-sm">
-        <div className="flex justify-between text-[#444444]">
-          <span>Tạm tính</span>
-          <span className="font-mono">{formatPrice(subtotal)}</span>
+      <div className="space-y-3 text-sm">
+        <div className="flex justify-between text-[#666666]">
+          <span>Tạm tính ({cartItems.length} sản phẩm)</span>
+          <span className="font-mono text-[#111111]">{formatPrice(subtotal)}</span>
         </div>
-        <div className="flex justify-between text-[#444444]">
-          <span>Phí dịch vụ</span>
-          <span className="font-mono">0%</span>
+        <div className="flex justify-between text-[#666666]">
+          <span>Phí giao hàng bảo hiểm</span>
+          <span className="text-[#155724] font-medium text-xs font-mono">MIỄN PHÍ</span>
         </div>
-        <div className="flex justify-between font-semibold text-[#111111] border-t border-[#E5E5E3] pt-2 mt-2">
-          <span className="text-xs font-mono uppercase tracking-wider">Tổng cộng</span>
-          <span className="font-mono">{formatPrice(total)}</span>
+        <div className="border-t border-[#E5E5E3] pt-3 flex justify-between items-baseline">
+          <span className="text-sm font-bold text-[#111111]">TỔNG CỘNG</span>
+          <span className="text-xl font-bold text-[#111111] font-mono">
+            {formatPrice(total)}
+          </span>
         </div>
       </div>
 
-      {/* Slot for extra content or button */}
-      {children ? (
-        children
-      ) : (
+      {proceedLabel && onProceed && (
         <button
           onClick={onProceed}
-          disabled={cartItems.length === 0}
-          className="w-full bg-[#111111] text-white text-xs font-mono uppercase tracking-wider py-3 hover:bg-[#2A2A2A] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full bg-[#111111] text-white text-xs font-mono uppercase tracking-wider py-3 hover:bg-[#2A2A2A] transition-colors"
         >
           {proceedLabel}
         </button>
       )}
+
+      {children}
     </div>
   )
 }
@@ -111,16 +91,22 @@ export default function CartPage() {
   const [error, setError] = useState('')
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [orderId, setOrderId] = useState(null)
+  const [orderResult, setOrderResult] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [confirmingPayment, setConfirmingPayment] = useState(false)
+  const [cancellingPayment, setCancellingPayment] = useState(false)
+  const [paymentPaid, setPaymentPaid] = useState(false)
+  const [orderCancelled, setOrderCancelled] = useState(false)
+  const [copiedField, setCopiedField] = useState('')
 
-  // Checkout form state
+  // Checkout form state: Luxury model strictly uses prepaid bank transfer
   const userRaw = localStorage.getItem('user')
   const user = userRaw ? JSON.parse(userRaw) : {}
   const [form, setForm] = useState({
     fullName: user?.name ?? '',
     phone: user?.phone ?? '',
     address: '',
-    paymentMethod: 'COD',
+    paymentMethod: 'BANK_TRANSFER',
   })
 
   // ── Fetch cart ─────────────────────────────────────────────────────────────
@@ -183,8 +169,10 @@ export default function CartPage() {
         cartItemId: cartItems.map((i) => i.cart_item_id || i.id),
       }
       const res = await orderServices.createOrder(payload)
-      const id = res.data?.data?.id ?? res.data?.id ?? null
+      const data = res.data?.data ?? res.data ?? {}
+      const id = data?.orderId ?? data?.id ?? null
       setOrderId(id)
+      setOrderResult(data)
       setOrderSuccess(true)
     } catch (err) {
       const msg =
@@ -198,59 +186,264 @@ export default function CartPage() {
     }
   }
 
-  // ── Success State ──────────────────────────────────────────────────────────
+  // ── Handle Confirm Bank Payment ─────────────────────────────────────────────
+  const handleConfirmBankPayment = async () => {
+    if (!orderId) return
+    setConfirmingPayment(true)
+    setError('')
+    try {
+      await orderServices.simulatePayment(orderId)
+      setPaymentPaid(true)
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Chưa thể xác thực thanh toán. Vui lòng kiểm tra lại chuyển khoản.')
+    } finally {
+      setConfirmingPayment(false)
+    }
+  }
+
+  const handleCancelThisOrder = async () => {
+    if (!orderId) return
+    const confirmed = window.confirm('Bạn có chắc muốn hủy đơn hàng này không? Sản phẩm sẽ được nhả lại trên sàn.')
+    if (!confirmed) return
+
+    setCancellingPayment(true)
+    setError('')
+    try {
+      await orderServices.cancelOrder(orderId)
+      setOrderCancelled(true)
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Không thể hủy đơn hàng này.')
+    } finally {
+      setCancellingPayment(false)
+    }
+  }
+
+  const copyToClipboard = (text, fieldName) => {
+    if (!text) return
+    navigator.clipboard.writeText(text)
+    setCopiedField(fieldName)
+    setTimeout(() => setCopiedField(''), 2500)
+  }
+
+  // ── Success State / Payment QR Screen ───────────────────────────────────────
   if (orderSuccess) {
+    const envBankCode = import.meta.env.VITE_PLATFORM_BANK_CODE 
+    const envBankAccount = import.meta.env.VITE_PLATFORM_BANK_ACCOUNT 
+    const envBankName = import.meta.env.VITE_PLATFORM_BANK_NAME 
+    const envAccountName = import.meta.env.VITE_PLATFORM_BANK_HOLDER 
+
+    const totalAmount = orderResult?.totalAmount || orderResult?.bank_info?.amount || 0
+    const bankAccount = orderResult?.bank_info?.account_number || envBankAccount
+    const bankCode = orderResult?.bank_info?.bank_code || envBankCode
+    const bankName = orderResult?.bank_info?.bank_name || orderResult?.bank_info?.bank_code || envBankName
+    const accountName = orderResult?.bank_info?.account_name || envAccountName
+    const transferContent = orderResult?.bank_info?.transfer_content || `DH${orderId}`
+    const qrUrl = orderResult?.qr_url || `https://img.vietqr.io/image/${bankCode}-${bankAccount}-compact2.png?amount=${Math.round(totalAmount)}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountName)}`
+
     return (
       <>
         <Navbar />
-        <div className="min-h-screen bg-[#FBFBFA] flex items-center justify-center px-4">
-          <div className="max-w-md w-full text-center space-y-6 py-20">
-            {/* Checkmark */}
-            <div className="mx-auto w-16 h-16 bg-[#F2F8F4] border border-[#1E7E34] flex items-center justify-center">
-              <svg
-                className="w-8 h-8 text-[#1E7E34]"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.5}
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="square" strokeLinejoin="miter" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-
-            <div>
-              <p className="text-xs font-mono uppercase tracking-widest text-[#444444] mb-2">
-                Đặt Hàng Thành Công
+        <div className="min-h-screen bg-[#FBFBFA] py-12 px-4 sm:px-6">
+          <div className="max-w-2xl mx-auto space-y-8">
+            {/* Header Status */}
+            <div className="text-center space-y-3">
+              <div className="mx-auto w-14 h-14 bg-[#F2F8F4] border border-[#1E7E34] flex items-center justify-center">
+                <svg
+                  className="w-7 h-7 text-[#1E7E34]"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="square" strokeLinejoin="miter" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p className="text-xs font-mono uppercase tracking-widest text-[#444444]">
+                Đơn Hàng #{orderId} Đã Tạo
               </p>
-              <h1 className="text-2xl font-light text-[#111111] tracking-tight">
-                Cảm ơn bạn đã mua hàng
+              <h1 className="text-2xl sm:text-3xl font-light text-[#111111] tracking-tight">
+                {paymentPaid ? 'Thanh Toán Đã Được Xác Nhận' : 'Thanh Toán Để Hoàn Tất Đơn Hàng'}
               </h1>
-              {orderId && (
-                <p className="text-sm text-[#444444] mt-2">
-                  Mã đơn hàng:{' '}
-                  <span className="font-mono text-[#111111]">#{orderId}</span>
-                </p>
-              )}
-              <p className="text-sm text-[#666666] mt-3 leading-relaxed">
-                Đơn hàng của bạn đã được xác nhận. Chúng tôi sẽ liên hệ sớm
-                nhất để xác nhận thông tin giao hàng.
+              <p className="text-sm text-[#666666] max-w-lg mx-auto">
+                {paymentPaid
+                  ? 'Cảm ơn quý khách! Đơn hàng đã được xác nhận thanh toán thành công và người bán sẽ tiến hành đóng gói giao hàng.'
+                  : 'Để đảm bảo tính xác thực và an toàn cho giao dịch hàng hiệu, quý khách vui lòng thanh toán chuyển khoản trước khi đơn hàng được gửi đi.'}
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link
-                to="/my-orders"
-                className="bg-[#111111] text-white text-xs font-mono uppercase tracking-wider px-6 py-3 hover:bg-[#2A2A2A] transition-colors"
-              >
-                Xem Đơn Hàng
-              </Link>
-              <Link
-                to="/shop"
-                className="border border-[#111111] text-[#111111] text-xs font-mono uppercase tracking-wider px-6 py-3 hover:bg-[#111111] hover:text-white transition-colors"
-              >
-                Tiếp Tục Mua Sắm
-              </Link>
-            </div>
+            {/* Error banner if payment confirmation fails */}
+            {error && (
+              <div className="bg-[#FDF2F2] border-l-2 border-[#D93838] text-[#9A2222] px-4 py-3 text-sm">
+                {error}
+              </div>
+            )}
+
+            {orderCancelled ? (
+              /* Order Cancelled State */
+              <div className="border border-[#E5E5E3] bg-white p-8 text-center space-y-6">
+                <div className="w-16 h-16 bg-[#FDF2F2] mx-auto flex items-center justify-center rounded-full border border-[#D93838]">
+                  <span className="text-2xl text-[#D93838]">✕</span>
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-[#111111] uppercase tracking-wide">
+                    Đơn Hàng Đã Được Hủy
+                  </h2>
+                  <p className="text-sm text-[#666666] mt-1">
+                    Sản phẩm trong đơn hàng đã được hoàn trả lại sàn giao dịch.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                  <Link
+                    to="/my-orders"
+                    className="bg-[#111111] text-white text-xs font-mono uppercase tracking-wider px-6 py-3 hover:bg-[#2A2A2A] transition-colors"
+                  >
+                    Xem Danh Sách Đơn Hàng
+                  </Link>
+                  <Link
+                    to="/shop"
+                    className="border border-[#111111] text-[#111111] text-xs font-mono uppercase tracking-wider px-6 py-3 hover:bg-[#111111] hover:text-white transition-colors"
+                  >
+                    Tiếp Tục Mua Sắm
+                  </Link>
+                </div>
+              </div>
+            ) : paymentPaid ? (
+              /* Payment Confirmed State */
+              <div className="border border-[#1E7E34] bg-white p-8 text-center space-y-6">
+                <div className="w-16 h-16 bg-[#F2F8F4] mx-auto flex items-center justify-center rounded-full border border-[#1E7E34]">
+                  <span className="text-2xl">✓</span>
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-[#111111] uppercase tracking-wide">
+                    Thanh Toán Trả Trước Thành Công!
+                  </h2>
+                  <p className="text-sm text-[#666666] mt-1">
+                    Trạng thái đơn: <span className="font-semibold text-[#1E7E34]">Đã Thanh Toán (Paid)</span>
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                  <Link
+                    to="/my-orders"
+                    className="bg-[#111111] text-white text-xs font-mono uppercase tracking-wider px-6 py-3 hover:bg-[#2A2A2A] transition-colors"
+                  >
+                    Xem Đơn Hàng Của Tôi
+                  </Link>
+                  <Link
+                    to="/shop"
+                    className="border border-[#111111] text-[#111111] text-xs font-mono uppercase tracking-wider px-6 py-3 hover:bg-[#111111] hover:text-white transition-colors"
+                  >
+                    Tiếp Tục Mua Sắm
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              /* QR Code & Banking Instruction Box */
+              <div className="border border-[#E5E5E3] bg-white p-6 sm:p-8 space-y-6 shadow-sm">
+                <div className="border-b border-[#E5E5E3] pb-4 flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-mono uppercase tracking-wider text-[#888888]">Số tiền cần thanh toán</span>
+                    <p className="text-2xl font-bold font-mono text-[#111111] mt-0.5">
+                      {formatPrice(totalAmount)}
+                    </p>
+                  </div>
+                  <span className="bg-[#FFF8E6] text-[#856404] text-[10px] font-mono uppercase px-2.5 py-1 border border-[#FFE8A1]">
+                    Chờ chuyển khoản
+                  </span>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-6 items-center">
+                  {/* QR Code */}
+                  <div className="bg-[#FBFBFA] border border-[#E5E5E3] p-4 flex flex-col items-center justify-center text-center">
+                    <img
+                      src={qrUrl}
+                      alt="VietQR Chuyển Khoản"
+                      className="w-56 h-auto border border-[#E5E5E3] shadow-inner bg-white"
+                    />
+                    <p className="text-[11px] text-[#666666] mt-3">
+                      Quét mã bằng app ngân hàng (VietQR / Mobile Banking)
+                    </p>
+                  </div>
+
+                  {/* Account Details */}
+                  <div className="space-y-4 text-sm">
+                    <div>
+                      <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Ngân hàng</p>
+                      <p className="font-semibold text-[#111111]">{bankName}</p>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Số tài khoản</p>
+                        <button
+                          onClick={() => copyToClipboard(bankAccount, 'account')}
+                          className="text-[10px] font-mono uppercase text-[#444444] hover:underline"
+                        >
+                          {copiedField === 'account' ? '✓ Đã sao chép' : 'Sao chép'}
+                        </button>
+                      </div>
+                      <p className="font-mono text-base font-bold text-[#111111] tracking-wide">{bankAccount}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Chủ tài khoản</p>
+                      <p className="font-semibold text-[#111111] uppercase">{accountName}</p>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Nội dung chuyển khoản</p>
+                        <button
+                          onClick={() => copyToClipboard(transferContent, 'content')}
+                          className="text-[10px] font-mono uppercase text-[#444444] hover:underline"
+                        >
+                          {copiedField === 'content' ? '✓ Đã sao chép' : 'Sao chép'}
+                        </button>
+                      </div>
+                      <p className="font-mono text-base font-bold text-[#1E7E34] bg-[#F2F8F4] px-2.5 py-1 inline-block border border-[#C3E6CB]">
+                        {transferContent}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Confirm Payment Action Button */}
+                <div className="border-t border-[#E5E5E3] pt-6 space-y-3">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <button
+                      onClick={handleCancelThisOrder}
+                      disabled={cancellingPayment}
+                      className="sm:w-1/3 border border-[#D93838] text-[#D93838] text-xs font-mono uppercase tracking-wider py-3.5 hover:bg-[#D93838] hover:text-white transition-colors disabled:opacity-50"
+                    >
+                      {cancellingPayment ? 'Đang hủy...' : '✕ Hủy Đơn Này'}
+                    </button>
+                    <button
+                      onClick={handleConfirmBankPayment}
+                      disabled={confirmingPayment}
+                      className="sm:w-2/3 bg-[#111111] text-white text-xs font-mono uppercase tracking-wider py-3.5 hover:bg-[#2A2A2A] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {confirmingPayment ? (
+                        <>
+                          <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                          </svg>
+                          Đang xác thực thanh toán...
+                        </>
+                      ) : (
+                        '✓ Tôi Đã Chuyển Khoản'
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs">
+                    <Link to="/my-orders" className="text-[#666666] hover:text-[#111111] underline">
+                      Xem danh sách đơn hàng
+                    </Link>
+                    <span className="text-[#888888]">Hệ thống bảo vệ giao dịch Aura Vault</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </>
@@ -479,13 +672,13 @@ export default function CartPage() {
               {/* Personal info */}
               <div className="border border-[#E5E5E3] bg-white p-6 space-y-5">
                 <h2 className="text-xs font-mono uppercase tracking-wider text-[#444444] border-b border-[#E5E5E3] pb-3">
-                  Thông Tin Cá Nhân
+                  Thông Tin Giao Hàng
                 </h2>
 
                 {/* Full Name */}
                 <div>
                   <label className="block text-xs font-mono uppercase tracking-wider text-[#444444] mb-1.5">
-                    Họ và Tên
+                    Họ và Tên Người Nhận
                   </label>
                   <input
                     type="text"
@@ -525,29 +718,33 @@ export default function CartPage() {
                 </div>
               </div>
 
-              {/* Payment Method */}
+              {/* Payment Method - COD REMOVED */}
               <div className="border border-[#E5E5E3] bg-white p-6 space-y-4">
-                <h2 className="text-xs font-mono uppercase tracking-wider text-[#444444] border-b border-[#E5E5E3] pb-3">
-                  Phương Thức Thanh Toán
-                </h2>
+                <div className="border-b border-[#E5E5E3] pb-3 flex items-center justify-between">
+                  <h2 className="text-xs font-mono uppercase tracking-wider text-[#444444]">
+                    Phương Thức Thanh Toán Trả Trước
+                  </h2>
+                  <span className="text-[10px] font-mono text-[#1E7E34] uppercase bg-[#F2F8F4] px-2 py-0.5 border border-[#C3E6CB]">
+                    Thanh toán an toàn 100%
+                  </span>
+                </div>
+
+                <div className="bg-[#FFF8E6] border border-[#FFE8A1] p-3.5 text-xs text-[#856404] leading-relaxed">
+                  ⓘ <strong>Quy định bảo chứng:</strong> Đối với sản phẩm xa xỉ cao cấp, quý khách vui lòng thanh toán trước 100% qua Chuyển khoản ngân hàng (VietQR). Hệ thống giữ tiền bảo chứng cho đến khi quý khách nhận và nghiệm thu sản phẩm.
+                </div>
 
                 {[
                   {
-                    value: 'COD',
-                    label: 'Thanh toán khi nhận hàng',
-                    desc: 'Trả tiền mặt khi nhận được hàng',
-                    icon: '💵',
-                  },
-                  {
                     value: 'BANK_TRANSFER',
-                    label: 'Chuyển khoản ngân hàng',
-                    desc: 'Chuyển khoản trực tiếp vào tài khoản ngân hàng',
+                    label: 'Chuyển khoản ngân hàng 24/7 (VietQR)',
+                    desc: 'Quét mã QR tự động điền số tài khoản, số tiền và nội dung chuyển khoản',
                     icon: '🏦',
+                    badge: 'Khuyên Dùng'
                   },
                   {
                     value: 'CREDIT_CARD',
-                    label: 'Thẻ tín dụng',
-                    desc: 'Visa, Mastercard, JCB',
+                    label: 'Thẻ tín dụng / Ghi nợ quốc tế',
+                    desc: 'Visa, Mastercard, JCB (Chuyển khoản theo quy trình ký quỹ)',
                     icon: '💳',
                   },
                 ].map((opt) => (
@@ -569,14 +766,21 @@ export default function CartPage() {
                       }
                       className="mt-0.5 accent-[#111111]"
                     />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span>{opt.icon}</span>
-                        <span className="text-sm font-medium text-[#111111]">
-                          {opt.label}
-                        </span>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span>{opt.icon}</span>
+                          <span className="text-sm font-medium text-[#111111]">
+                            {opt.label}
+                          </span>
+                        </div>
+                        {opt.badge && (
+                          <span className="text-[10px] font-mono uppercase bg-[#111111] text-white px-2 py-0.5">
+                            {opt.badge}
+                          </span>
+                        )}
                       </div>
-                      <p className="text-xs text-[#888888] mt-0.5">{opt.desc}</p>
+                      <p className="text-xs text-[#888888] mt-1">{opt.desc}</p>
                     </div>
                   </label>
                 ))}
@@ -589,7 +793,7 @@ export default function CartPage() {
                 <button
                   onClick={handlePlaceOrder}
                   disabled={submitting}
-                  className="w-full bg-[#111111] text-white text-xs font-mono uppercase tracking-wider py-3 hover:bg-[#2A2A2A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full bg-[#111111] text-white text-xs font-mono uppercase tracking-wider py-3.5 hover:bg-[#2A2A2A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {submitting ? (
                     <>
@@ -612,17 +816,17 @@ export default function CartPage() {
                           d="M4 12a8 8 0 018-8v8H4z"
                         />
                       </svg>
-                      Đang xử lý...
+                      Đang xử lý đơn...
                     </>
                   ) : (
-                    'ĐẶT HÀNG'
+                    'TIẾN HÀNH THANH TOÁN'
                   )}
                 </button>
 
                 <p className="text-[10px] font-mono text-[#888888] text-center mt-3 leading-relaxed">
                   Bằng cách đặt hàng, bạn đồng ý với{' '}
                   <Link to="/terms" className="underline hover:text-[#444444]">
-                    Điều khoản dịch vụ
+                    Điều khoản bảo chứng dịch vụ
                   </Link>{' '}
                   của Aura Vault.
                 </p>

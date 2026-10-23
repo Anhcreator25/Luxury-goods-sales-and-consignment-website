@@ -35,5 +35,13 @@ export const orderServices = {
       params: { orderId },
     });
   },
-};
 
+  /**
+   * Cancel an unpaid pending order.
+   * @param {number|string} orderId
+   * @returns {Promise<any>}
+   */
+  cancelOrder: async (orderId) => {
+    return await axiosClient.put(`/orders/${orderId}/cancel`);
+  },
+};

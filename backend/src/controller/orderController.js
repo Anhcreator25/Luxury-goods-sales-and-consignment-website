@@ -1,16 +1,18 @@
-import { createOrderServices,getOrderByRoleServices,updatePaymentSuccessService } from "../services/Order_services.js";
+import { createOrderServices, getOrderByRoleServices, updatePaymentSuccessService, cancelOrderServices } from "../services/Order_services.js";
 
 export const createOrderController = async ( req, res) => {
     try {
         
       const userId = req.user.id;
-      const { shipping_address , phone_number , payment_method, cartItemId} =req.body;
+      const { shipping_address , phone_number , payment_method, cartItemId} = req.body;
         if(!shipping_address || !phone_number || !payment_method){
             return res.status(400).json({
                    success: false,
                    message: " please provide shipping_address, phone number, and payment method ."
             })
         }
+
+
         if (!cartItemId || !Array.isArray(cartItemId) || cartItemId.length === 0) {
             return res.status(400).json({
                 success: false,
@@ -63,5 +65,25 @@ export const simulatePaymentSuccessController = async (req, res, next) => {
         return res.status(200).json(result);
     } catch (error) {
         next(error);
+    }
+};
+
+export const cancelOrderController = async (req, res) => {
+    try {
+        const orderId = req.params.id;
+        const userId = req.user.id;
+        const userRole = req.user.role;
+
+        if (!orderId) {
+            return res.status(400).json({ success: false, message: "Thiếu mã đơn hàng cần hủy." });
+        }
+
+        const result = await cancelOrderServices(orderId, userId, userRole);
+        return res.status(200).json(result);
+    } catch (error) {
+        return res.status(error.status || 500).json({
+            success: false,
+            message: error.message || "Lỗi máy chủ khi hủy đơn hàng"
+        });
     }
 };
