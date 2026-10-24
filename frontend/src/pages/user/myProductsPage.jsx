@@ -89,7 +89,20 @@ export default function MyProductsPage() {
 
   useEffect(() => {
     const token = localStorage.getItem('token')
-    if (!token) { navigate('/login'); return }
+    const rawUser = localStorage.getItem('user')
+    if (!token) { 
+      navigate('/login')
+      return 
+    }
+    try {
+      const u = JSON.parse(rawUser || '{}')
+      if (u?.role === 'admin') {
+        navigate('/admin', { replace: true })
+        return
+      }
+    } catch {
+      // ignore JSON parse error
+    }
     fetchProducts()
   }, [])
 

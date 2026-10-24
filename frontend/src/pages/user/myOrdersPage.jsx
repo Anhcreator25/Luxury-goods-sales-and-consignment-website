@@ -166,12 +166,22 @@ export default function MyOrdersPage() {
   const [confirmingPayment, setConfirmingPayment] = useState(false)
   const [cancellingId, setCancellingId] = useState(null)
 
-  // Redirect to login if user is not authenticated
+  // Redirect to login if user is not authenticated or redirect to admin if role is admin
   useEffect(() => {
     const token = localStorage.getItem('token')
+    const rawUser = localStorage.getItem('user')
     if (!token) {
       navigate('/login')
       return
+    }
+    try {
+      const u = JSON.parse(rawUser || '{}')
+      if (u?.role === 'admin') {
+        navigate('/admin', { replace: true })
+        return
+      }
+    } catch {
+      // ignore JSON error
     }
     fetchOrders()
   }, [])

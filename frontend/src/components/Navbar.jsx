@@ -136,12 +136,21 @@ export default function Navbar({ onSearch, onCategorySelect }) {
             BST Mới
           </Link>
 
-          <Link
-            to="/my-products"
-            className="text-[#555555] hover:text-[#111111] transition-colors pb-1"
-          >
-            Ký Gửi
-          </Link>
+          {user && user.role === 'admin' ? (
+            <Link
+              to="/admin"
+              className="text-[#111111] font-semibold hover:text-black transition-colors pb-1 flex items-center gap-1"
+            >
+              <span>⚙️</span> Quản Trị Sàn
+            </Link>
+          ) : (
+            <Link
+              to="/my-products"
+              className="text-[#555555] hover:text-[#111111] transition-colors pb-1"
+            >
+              Ký Gửi
+            </Link>
+          )}
         </nav>
 
         {/* 3. [ 🔍 TÌM KIẾM ] */}
@@ -262,24 +271,33 @@ export default function Navbar({ onSearch, onCategorySelect }) {
                     >
                       Thông Tin Cá Nhân
                     </button>
-                    <button
-                      onClick={() => { setIsUserMenuOpen(false); navigate("/my-orders"); }}
-                      className="w-full text-left px-5 py-2 text-xs font-mono uppercase tracking-wider text-[#444444] hover:bg-[#F8F8F7] hover:text-[#111111] transition"
-                    >
-                      Đơn Hàng Của Tôi
-                    </button>
-                    <button
-                      onClick={() => { setIsUserMenuOpen(false); navigate("/my-products"); }}
-                      className="w-full text-left px-5 py-2 text-xs font-mono uppercase tracking-wider text-[#444444] hover:bg-[#F8F8F7] hover:text-[#111111] transition"
-                    >
-                      Ký Gửi Của Tôi
-                    </button>
+
+                    {/* Chỉ hiển thị cho khách hàng & người bán, Ẩn đối với Admin */}
+                    {(!user || user.role !== 'admin') && (
+                      <>
+                        <button
+                          onClick={() => { setIsUserMenuOpen(false); navigate("/my-orders"); }}
+                          className="w-full text-left px-5 py-2 text-xs font-mono uppercase tracking-wider text-[#444444] hover:bg-[#F8F8F7] hover:text-[#111111] transition"
+                        >
+                          Đơn Hàng Của Tôi
+                        </button>
+                        <button
+                          onClick={() => { setIsUserMenuOpen(false); navigate("/my-products"); }}
+                          className="w-full text-left px-5 py-2 text-xs font-mono uppercase tracking-wider text-[#444444] hover:bg-[#F8F8F7] hover:text-[#111111] transition"
+                        >
+                          Ký Gửi Của Tôi
+                        </button>
+                      </>
+                    )}
+
+                    {/* Menu quản trị riêng biệt cho Admin */}
                     {user && user.role === 'admin' && (
                       <button
                         onClick={() => { setIsUserMenuOpen(false); navigate("/admin"); }}
-                        className="w-full text-left px-5 py-2 text-xs font-mono uppercase tracking-wider text-[#444444] hover:bg-[#F8F8F7] hover:text-[#111111] transition"
+                        className="w-full text-left px-5 py-2 text-xs font-mono uppercase tracking-wider text-[#111111] font-semibold bg-[#F8F8F7] hover:bg-[#EFEFEF] transition flex items-center justify-between"
                       >
-                        Admin Dashboard
+                        <span>⚙️ Admin Dashboard</span>
+                        <span className="text-[9px] bg-[#111111] text-white px-1.5 py-0.5">ADMIN</span>
                       </button>
                     )}
                   </div>
