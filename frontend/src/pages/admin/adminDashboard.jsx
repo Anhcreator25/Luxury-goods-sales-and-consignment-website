@@ -13,9 +13,13 @@ const TABS = [
 
 // Order status visual badges
 const STATUS_LABEL = {
-  completed:  { text: 'Hoàn Thành', cls: 'bg-[#F2F8F4] text-[#155724]' },
-  processing: { text: 'Đang Xử Lý', cls: 'bg-[#FFF8E6] text-[#856404]' },
-  cancelled:  { text: 'Đã Huỷ',    cls: 'bg-[#FDF2F2] text-[#9A2222]' },
+  confirmed:  { text: 'Đã Thanh Toán', cls: 'bg-[#F2F8F4] text-[#155724]' },
+  paid:       { text: 'Đã Thanh Toán', cls: 'bg-[#F2F8F4] text-[#155724]' },
+  completed:  { text: 'Hoàn Thành',    cls: 'bg-[#F2F8F4] text-[#155724]' },
+  processing: { text: 'Đang Chuẩn Bị', cls: 'bg-[#EBF3FE] text-[#1D4ED8]' },
+  shipping:   { text: 'Đang Giao',    cls: 'bg-[#EBF3FE] text-[#1D4ED8]' },
+  pending:    { text: 'Chờ Thanh Toán', cls: 'bg-[#FFF8E6] text-[#856404]' },
+  cancelled:  { text: 'Đã Huỷ',        cls: 'bg-[#FDF2F2] text-[#9A2222]' },
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -42,13 +46,30 @@ export default function AdminDashboard() {
 
   // ── overview state ──────────────────────────────────────────────────────
   const [stats, setStats] = useState({
-    revenue:    0,
-    commission: 0,
-    orders:     0,
-    products:   0,
+    revenue:         0,
+    commission:      0,
+    orders:          0,
+    paidOrders:      0,
+    pendingOrders:   0,
+    cancelledOrders: 0,
+    products:        0,
   })
-  const [recentOrders, setRecentOrders] = useState([])
+  const [allOrders, setAllOrders] = useState([])
+  const [orderFilter, setOrderFilter] = useState('all') // 'all' | 'paid' | 'pending' | 'cancelled'
   const [loadingStats, setLoadingStats] = useState(false)
+
+  // Derived filtered orders
+  const filteredOrders = allOrders.filter(o => {
+    const rawStatus = (o.order_status || o.status || 'pending').toLowerCase()
+    const isPaid = o.payment_status === 'paid' || ['confirmed', 'completed', 'shipping'].includes(rawStatus)
+    const isCancelled = rawStatus === 'cancelled'
+    const isPending = !isPaid && !isCancelled
+
+    if (orderFilter === 'paid') return isPaid
+    if (orderFilter === 'pending') return isPending
+    if (orderFilter === 'cancelled') return isCancelled
+    return true
+  })
 
   // ── listings state ──────────────────────────────────────────────────────
   const [pending, setPending]         = useState([])
@@ -73,14 +94,34 @@ export default function AdminDashboard() {
       if (ordersRes.status === 'fulfilled') {
         const orders = ordersRes.value.data?.orders ?? ordersRes.value.data ?? []
         if (Array.isArray(orders)) {
-          const revenue = orders.reduce((s, o) => s + (Number(o.total_price) || 0), 0)
+          // Phân loại đơn hàng
+          const isPaidOrder = o => 
+            o.payment_status === 'paid' || 
+            ['confirmed', 'completed', 'shipping'].includes(o.order_status || o.status)
+          const isCancelledOrder = o =>
+            (o.order_status || o.status) === 'cancelled'
+          const isPendingOrder = o =>
+            !isPaidOrder(o) && !isCancelledOrder(o)
+
+          const paidOrders = orders.filter(isPaidOrder)
+          const pendingOrders = orders.filter(isPendingOrder)
+          const cancelledOrders = orders.filter(isCancelledOrder)
+
+          const revenue = paidOrders.reduce((s, o) => s + (Number(o.total_price || o.total_amount) || 0), 0)
+          const commission = paidOrders.reduce((s, o) => 
+            s + (Number(o.commission_fee) || Math.round((Number(o.total_price || o.total_amount) || 0) * 0.15)), 0
+          )
+
           setStats(prev => ({
             ...prev,
             revenue,
-            commission: Math.round(revenue * 0.1),
-            orders:     orders.length,
+            commission,
+            orders: orders.length,
+            paidOrders: paidOrders.length,
+            pendingOrders: pendingOrders.length,
+            cancelledOrders: cancelledOrders.length,
           }))
-          setRecentOrders(orders.slice(0, 5))
+          setAllOrders(orders)
         }
       }
       // listings count
@@ -229,17 +270,17 @@ export default function AdminDashboard() {
                 {
                   label: 'Tổng Doanh Thu',
                   value: loadingStats ? '—' : formatPrice(stats.revenue),
-                  sub: 'Tất cả đơn hàng hoàn thành',
+                  sub: 'Từ đơn thanh toán thành công',
                 },
                 {
-                  label: 'Hoa Hồng Sàn (10%)',
+                  label: 'Hoa Hồng Sàn (15%)',
                   value: loadingStats ? '—' : formatPrice(stats.commission),
-                  sub: '10% trên tổng doanh thu',
+                  sub: '15% trên đơn thành công',
                 },
                 {
-                  label: 'Tổng Đơn Hàng',
-                  value: loadingStats ? '—' : stats.orders.toLocaleString(),
-                  sub: 'Kể từ khi ra mắt',
+                  label: 'Đơn Thành Công',
+                  value: loadingStats ? '—' : stats.paidOrders.toLocaleString(),
+                  sub: `${stats.pendingOrders} chờ • ${stats.cancelledOrders} huỷ • ${stats.orders} tổng`,
                 },
                 {
                   label: 'Sản Phẩm Đang Bán',
@@ -261,10 +302,36 @@ export default function AdminDashboard() {
 
             {/* Recent Orders Table */}
             <div className="bg-white border border-[#E5E5E3]">
-              <div className="px-6 py-4 border-b border-[#E5E5E3]">
+              <div className="px-6 py-4 border-b border-[#E5E5E3] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <h2 className="text-xs font-mono uppercase tracking-wider text-[#111111]">
-                  Đơn Hàng Gần Đây
+                  Quản Lý Đơn Hàng ({filteredOrders.length})
                 </h2>
+
+                {/* Filter Tabs */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {[
+                    { id: 'all',       label: 'Tất Cả',          count: stats.orders },
+                    { id: 'paid',      label: 'Đã Thanh Toán',   count: stats.paidOrders },
+                    { id: 'pending',   label: 'Chờ Thanh Toán',  count: stats.pendingOrders },
+                    { id: 'cancelled', label: 'Đã Huỷ',          count: stats.cancelledOrders },
+                  ].map(tab => {
+                    const active = orderFilter === tab.id
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setOrderFilter(tab.id)}
+                        className={`text-[11px] font-mono uppercase tracking-wider px-2.5 py-1 transition-colors border ${
+                          active
+                            ? 'bg-[#111111] text-white border-[#111111]'
+                            : 'bg-[#FBFBFA] text-[#666666] border-[#E5E5E3] hover:text-[#111111] hover:border-[#111111]'
+                        }`}
+                      >
+                        {tab.label} <span className="opacity-70">({tab.count})</span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -278,31 +345,45 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {recentOrders.map((o, i) => {
-                      const sid    = o.id ?? o._id ?? `#${i + 1}`
-                      const buyer  = o.buyer ?? o.buyer_name ?? o.user ?? '—'
-                      const prod   = o.product ?? o.product_name ?? o.listing_title ?? '—'
-                      const total  = Number(o.total ?? o.total_price ?? 0)
-                      const status = o.status ?? 'completed'
-                      const date   = o.date ?? o.created_at?.slice(0, 10) ?? '—'
-                      const badge  = STATUS_LABEL[status] ?? STATUS_LABEL.completed
-                      return (
-                        <tr key={sid} className="border-b border-[#E5E5E3] hover:bg-[#FBFBFA] transition-colors">
-                          <td className="px-4 py-3 font-mono text-xs text-[#111111]">{sid}</td>
-                          <td className="px-4 py-3 text-[#333333]">{buyer}</td>
-                          <td className="px-4 py-3 text-[#333333] max-w-[200px] truncate">{prod}</td>
-                          <td className="px-4 py-3 font-mono text-xs text-[#111111]">
-                            {total > 0 ? formatPrice(total) : '—'}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`text-xs font-mono uppercase tracking-wider px-2 py-1 ${badge.cls}`}>
-                              {badge.text}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 font-mono text-xs text-[#888888]">{date}</td>
-                        </tr>
-                      )
-                    })}
+                    {filteredOrders.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="text-center py-8 text-xs font-mono text-[#888888]">
+                          Không có đơn hàng nào trong mục này.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredOrders.map((o, i) => {
+                        const sid    = o.order_id ?? o.id ?? o._id ?? `#${i + 1}`
+                        const buyer  = o.buyer_name || o.buyer || o.user || '—'
+                        const prod   = o.items && o.items.length > 0
+                          ? o.items.map(it => it.title || it.product_title).filter(Boolean).join(', ')
+                          : (o.product ?? o.product_name ?? o.listing_title ?? '—')
+                        const total  = Number(o.total_amount ?? o.total_price ?? o.total ?? 0)
+                        const rawStatus = (o.order_status || o.status || 'pending').toLowerCase()
+                        // Ưu tiên hiển thị nếu đã thanh toán
+                        const isPaid = o.payment_status === 'paid' || ['confirmed', 'completed', 'shipping'].includes(rawStatus)
+                        const isCancelled = rawStatus === 'cancelled'
+                        const statusKey = isCancelled ? 'cancelled' : (isPaid ? 'confirmed' : 'pending')
+                        const badge  = STATUS_LABEL[statusKey] ?? { text: rawStatus, cls: 'bg-[#F3F4F6] text-[#374151]' }
+                        const date   = o.date ?? o.created_at?.slice(0, 10) ?? '—'
+                        return (
+                          <tr key={sid} className="border-b border-[#E5E5E3] hover:bg-[#FBFBFA] transition-colors">
+                            <td className="px-4 py-3 font-mono text-xs text-[#111111]">#{sid}</td>
+                            <td className="px-4 py-3 text-[#333333] font-medium">{buyer}</td>
+                            <td className="px-4 py-3 text-[#333333] max-w-[220px] truncate" title={prod}>{prod}</td>
+                            <td className="px-4 py-3 font-mono text-xs text-[#111111] font-semibold">
+                              {total > 0 ? formatPrice(total) : '—'}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`text-xs font-mono uppercase tracking-wider px-2 py-1 ${badge.cls}`}>
+                                {badge.text}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 font-mono text-xs text-[#888888]">{date}</td>
+                          </tr>
+                        )
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>

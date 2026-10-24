@@ -115,15 +115,21 @@ export const createOrderServices = async (userId, orderData,cartItemId)=> {
 }
 
 //Buyers view their placed orders, while sellers view the list of orders requiring delivery.
+//Admin views all orders across the entire platform.
 export const getOrderByRoleServices = async (user) => {
     const connection = await pool.getConnection();
 
     try {
-        // Simply retrieve the orders placed by this specific user.
+        const isAdmin = user.role === 'admin';
+
+        // Retrieve orders: all platform orders for admin, or only the user's orders for buyer
         const query = `
             SELECT 
                 o.id AS order_id,
                 o.id AS id,
+                o.buyer_id,
+                u.name AS buyer_name,
+                u.email AS buyer_email,
                 o.total_amount,
                 o.total_amount AS total_price,
                 o.commission_fee,
@@ -136,11 +142,12 @@ export const getOrderByRoleServices = async (user) => {
                 o.payment_status,
                 o.created_at
             FROM orders o 
-            WHERE o.buyer_id = ?
+            LEFT JOIN users u ON o.buyer_id = u.id
+            ${isAdmin ? '' : 'WHERE o.buyer_id = ?'}
             ORDER BY o.created_at DESC
         `;
 
-        const [orders] = await connection.query(query, [user.id]);
+        const [orders] = await connection.query(query, isAdmin ? [] : [user.id]);
 
         // Go through each order to retrieve the detailed list of products inside.
         for (let order of orders) {

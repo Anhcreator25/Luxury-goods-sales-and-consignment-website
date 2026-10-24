@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.post('/', verifyToken, verifyRole(["user"]), orderController.createOrderController);
 router.get('/', verifyToken, orderController.getOrdersController);
-router.get('/payment/simulate-checkout', orderController.simulatePaymentSuccessController);
+router.get('/payment/simulate-checkout',orderController.simulatePaymentSuccessController);
 router.put('/:id/cancel', verifyToken,cancelItemslimiter,orderController.cancelOrderController);
 
 export default router;
