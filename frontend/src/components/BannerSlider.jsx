@@ -74,14 +74,14 @@ export default function BannerSlider({
             <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent"></div>
 
             <div className="absolute inset-0 max-w-7xl mx-auto px-6 sm:px-12 flex flex-col justify-center text-white z-20">
-              <div className="max-w-2xl space-y-5">
+              <div className="max-w-3xl xl:max-w-4xl space-y-5">
                 {slide.tag && (
                   <span className="inline-block px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 text-[10px] font-mono uppercase tracking-[0.3em] text-[#E0E0DE]">
                     {slide.tag}
                   </span>
                 )}
 
-                <h2 className="text-3xl sm:text-5xl lg:text-6xl font-serif font-normal tracking-tight leading-tight">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-normal tracking-tight leading-[1.2]">
                   {slide.title}
                 </h2>
 
