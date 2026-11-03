@@ -51,6 +51,15 @@ export default function Footer({ onCategorySelect }) {
                 Sneaker & Giày hiệu
               </button>
             </li>
+            <li>
+              <button 
+                type="button"
+                onClick={() => onCategorySelect && onCategorySelect(4)} 
+                className="hover:text-[#111111] cursor-pointer"
+              >
+                Quần áo & Thời trang
+              </button>
+            </li>
           </ul>
         </div>
         <div>

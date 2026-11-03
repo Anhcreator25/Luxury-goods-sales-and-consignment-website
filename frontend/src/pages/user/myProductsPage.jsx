@@ -72,6 +72,7 @@ export default function MyProductsPage() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('list')
   const [products, setProducts] = useState([])
+  const [brandList, setBrandList] = useState(BRAND_OPTIONS)
   const [loading, setLoading] = useState(true)
   const [listError, setListError] = useState('')
 
@@ -104,7 +105,22 @@ export default function MyProductsPage() {
       // ignore JSON parse error
     }
     fetchProducts()
+    fetchBrands()
   }, [])
+
+  const fetchBrands = async () => {
+    try {
+      const res = await listingServices.getBrands()
+      const data = res.data?.data || res.data || []
+      if (Array.isArray(data) && data.length > 0) {
+        const mapped = data.map(b => ({ id: b.id, label: b.name }))
+        mapped.push({ id: null, label: '+ Thêm thương hiệu mới / Khác' })
+        setBrandList(mapped)
+      }
+    } catch {
+      // Keep fallback BRAND_OPTIONS
+    }
+  }
 
   const fetchProducts = async () => {
     setLoading(true)
@@ -137,10 +153,11 @@ export default function MyProductsPage() {
   const handleEdit = async (product) => {
     const pid = product.id || product._id
     const fallbackImg = product.primary_image || product.image_url || ''
+    const currentBrand = product.brand_name || product.brand || ''
 
     setForm({
       title:           product.title || '',
-      brand:           product.brand || '',
+      brand:           currentBrand,
       brand_id:        product.brand_id || null,
       description:     product.description || '',
       price:           product.selling_price ?? '',
@@ -155,10 +172,21 @@ export default function MyProductsPage() {
     setFormSuccess('')
     setActiveTab('form')
 
-    // Fetch full listing details to get all images from listing_images table
+    // Fetch full listing details to get all images and precise brand info
     try {
       const res = await listingServices.getListingById(pid)
       const detail = res.data?.data || res.data || {}
+      
+      const detailedBrand = detail.brand_name || detail.brand || currentBrand
+      const detailedBrandId = detail.brand_id || product.brand_id || null
+
+      setForm(prev => ({
+        ...prev,
+        brand: detailedBrand,
+        brand_id: detailedBrandId,
+        description: detail.description || prev.description,
+      }))
+
       if (Array.isArray(detail.images) && detail.images.length > 0) {
         const fullUrls = detail.images
           .map(img => (typeof img === 'string' ? img : img.image_url))
@@ -168,8 +196,6 @@ export default function MyProductsPage() {
           setForm(prev => ({
             ...prev,
             imageUrls: fullUrls,
-            brand_id: detail.brand_id || prev.brand_id,
-            description: detail.description || prev.description,
           }))
         }
       }
@@ -239,6 +265,7 @@ export default function MyProductsPage() {
       setEditId(null)
       setIsUpdateMode(false)
       await fetchProducts()
+      await fetchBrands()
       setTimeout(() => {
         setActiveTab('list')
         setFormSuccess('')
@@ -354,7 +381,9 @@ export default function MyProductsPage() {
                         {/* Info */}
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-[#111111] truncate">{product.title}</p>
-                          <p className="text-xs text-[#888888] font-mono mt-0.5">{product.brand}</p>
+                          <p className="text-xs text-[#888888] font-mono mt-0.5">
+                            {product.brand_name || product.brand || '—'}
+                          </p>
                           <div className="flex items-center gap-2 mt-1.5">
                             <StatusBadge status={product.status || 'pending'} />
                           </div>
@@ -461,25 +490,26 @@ export default function MyProductsPage() {
 
               {/* Thương hiệu */}
               <div>
-                <label className="block text-xs font-mono uppercase tracking-wider text-[#444444] mb-1.5">
-                  Thương Hiệu <span className="text-[#D93838]">*</span>
+                <label className="block text-xs font-mono uppercase tracking-wider text-[#444444] mb-1.5 flex justify-between items-center">
+                  <span>Thương Hiệu <span className="text-[#D93838]">*</span></span>
+                  <span className="text-[10px] text-[#888888] font-normal">Gõ tên thương hiệu mới để tự động lưu vào hệ thống</span>
                 </label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <select
                     name="brand_id"
                     value={form.brand_id || ''}
                     onChange={(e) => {
                       const selId = e.target.value ? Number(e.target.value) : null
-                      const found = BRAND_OPTIONS.find(b => b.id === selId)
+                      const found = brandList.find(b => b.id === selId)
                       setForm(prev => ({
                         ...prev,
                         brand_id: selId,
-                        brand: found && found.id ? found.label : prev.brand
+                        brand: found && found.id ? found.label : (selId === null ? '' : prev.brand)
                       }))
                     }}
                     className="border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] focus:outline-none focus:border-[#111111] transition-colors duration-150 appearance-none"
                   >
-                    {BRAND_OPTIONS.map(b => (
+                    {brandList.map(b => (
                       <option key={String(b.id)} value={b.id || ''}>{b.label}</option>
                     ))}
                   </select>
@@ -489,8 +519,8 @@ export default function MyProductsPage() {
                     value={form.brand}
                     onChange={handleFormChange}
                     required
-                    placeholder="Tên thương hiệu..."
-                    className="border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#111111] transition-colors duration-150"
+                    placeholder="Gõ tên thương hiệu (vd: Patek Philippe, Rolex, Prada...)"
+                    className="border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#111111] transition-colors duration-150 font-medium"
                   />
                 </div>
               </div>

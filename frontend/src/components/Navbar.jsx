@@ -122,6 +122,13 @@ export default function Navbar({ onSearch, onCategorySelect }) {
                   <span className="text-[10px] text-[#999999]">Jordan / Dior</span>
                 </button>
                 <button
+                  onClick={() => { setIsProductMenuOpen(false); navigate("/shop?category_id=4"); }}
+                  className="w-full text-left px-5 py-2.5 text-xs font-mono uppercase tracking-wider text-[#333333] hover:bg-[#F8F8F7] hover:text-[#111111] flex justify-between items-center transition"
+                >
+                  <span>Quần Áo & Thời Trang</span>
+                  <span className="text-[10px] text-[#999999]">LV / Balenciaga</span>
+                </button>
+                <button
                   onClick={() => { setIsProductMenuOpen(false); navigate("/shop?category_id=5"); }}
                   className="w-full text-left px-5 py-2.5 text-xs font-mono uppercase tracking-wider text-[#333333] hover:bg-[#F8F8F7] hover:text-[#111111] flex justify-between items-center transition"
                 >
