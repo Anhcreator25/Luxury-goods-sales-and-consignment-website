@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 
-// Dữ liệu banner mặc định cho nền tảng Aura Vault
+// Dữ liệu 5 banner danh mục chuẩn cho nền tảng Aura Vault
 export const DEFAULT_BANNER_SLIDES = [
   {
     id: 1,
     tag: "Haute Horlogerie 2026",
     title: "Đồng Hồ Xa Xỉ Thụy Sĩ",
     subtitle: "Tuyển tập những cỗ máy thời gian huyền thoại từ Rolex, Patek Philippe, Audemars Piguet đã qua thẩm định 100%.",
-    image: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1600&q=85",
+    image: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=1920&q=85",
     linkText: "Khám phá Đồng Hồ",
     secondaryText: "Xem tất cả",
     categoryFilter: 3
@@ -15,22 +15,42 @@ export const DEFAULT_BANNER_SLIDES = [
   {
     id: 2,
     tag: "Iconic Handbags",
-    title: "Kiệt Tác Túi Xách Cao Cấp",
+    title: "Kiệt Tác Túi Xách Thượng Lưu",
     subtitle: "Sở hữu những thiết kế kinh điển từ Hermès Birkin, Chanel Flap Bag và Dior Lady với chứng thư xác thực độc bản.",
-    image: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=1600&q=85",
+    image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=1920&q=85",
     linkText: "Khám phá Túi Xách",
+    secondaryText: "Xem tất cả",
+    categoryFilter: 1
+  },
+  {
+    id: 3,
+    tag: "Rare & Limited Edition",
+    title: "Sneaker & Giày Hiệu Độc Bản",
+    subtitle: "Bộ sưu tập giày hiếm và phiên bản giới hạn chính hãng Jordan, Dior, Nike x Travis Scott được tuyển chọn khắt khe.",
+    image: "https://images.unsplash.com/photo-1552346154-21d32810aba3?auto=format&fit=crop&w=1920&q=85",
+    linkText: "Khám phá Sneaker",
     secondaryText: "Xem tất cả",
     categoryFilter: 2
   },
   {
-    id: 3,
-    tag: "High Jewelry & Gems",
-    title: "Trang Sức & Phụ Kiện Tinh Hoa",
-    subtitle: "Vẻ đẹp vượt thời gian của vàng khối, kim cương và đá quý tự nhiên từ Cartier, Van Cleef & Arpels, Bvlgari.",
-    image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1600&q=85",
-    linkText: "Khám phá Trang Sức",
+    id: 4,
+    tag: "Avant-Garde Streetwear",
+    title: "Thời Trang Phong Cách",
+    subtitle: "Thiết kế phá cách và đương đại từ Balenciaga, Off-White, Fear of God, Chrome Hearts định hình phong cách cá nhân.",
+    image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1920&q=85",
+    linkText: "Khám phá Streetwear",
     secondaryText: "Xem tất cả",
     categoryFilter: 4
+  },
+  {
+    id: 5,
+    tag: "High Jewelry & Gems",
+    title: "Trang Sức & Kim Hoàn ",
+    subtitle: "Vẻ đẹp vĩnh cửu của vàng khối, kim cương và đá quý tự nhiên từ Cartier, Van Cleef & Arpels, Bvlgari.",
+    image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1920&q=85",
+    linkText: "Khám phá Trang Sức",
+    secondaryText: "Xem tất cả",
+    categoryFilter: 5
   }
 ];
 
@@ -133,4 +153,3 @@ export default function BannerSlider({
     </section>
   );
 }
-

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth, useClickOutside, useCart } from "../hooks";
 
 export default function Navbar({ onSearch, onCategorySelect }) {
@@ -10,6 +10,7 @@ export default function Navbar({ onSearch, onCategorySelect }) {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, token, logout } = useAuth();
   const { cartCount } = useCart();
 
@@ -73,7 +74,11 @@ export default function Navbar({ onSearch, onCategorySelect }) {
         <nav className="hidden xl:flex items-center space-x-8 text-xs font-mono uppercase tracking-[0.15em]">
           <Link
             to="/"
-            className="text-[#111111] font-semibold border-b border-[#111111] pb-1"
+            className={`pb-1 transition-all duration-200 ${
+              location.pathname === "/"
+                ? "text-[#111111] font-semibold border-b-2 border-[#111111]"
+                : "text-[#666666] hover:text-[#111111]"
+            }`}
           >
             Trang Chủ
           </Link>
@@ -82,7 +87,11 @@ export default function Navbar({ onSearch, onCategorySelect }) {
           <div className="relative" ref={productDropdownRef}>
             <button
               onClick={() => setIsProductMenuOpen(!isProductMenuOpen)}
-              className="flex items-center space-x-1.5 text-[#555555] hover:text-[#111111] transition-colors pb-1 cursor-pointer"
+              className={`flex items-center space-x-1.5 pb-1 transition-all duration-200 cursor-pointer ${
+                location.pathname.startsWith("/shop") || location.pathname.startsWith("/product")
+                  ? "text-[#111111] font-semibold border-b-2 border-[#111111]"
+                  : "text-[#666666] hover:text-[#111111]"
+              }`}
             >
               <span>Sản Phẩm</span>
               <span className={`text-[9px] transition-transform duration-200 ${isProductMenuOpen ? "rotate-180" : ""}`}>
@@ -139,21 +148,25 @@ export default function Navbar({ onSearch, onCategorySelect }) {
             )}
           </div>
 
-          <Link to="/shop" className="text-[#555555] hover:text-[#111111] transition-colors pb-1">
-            BST Mới
-          </Link>
-
           {user && user.role === 'admin' ? (
             <Link
               to="/admin"
-              className="text-[#111111] font-semibold hover:text-black transition-colors pb-1 flex items-center gap-1"
+              className={`pb-1 transition-all duration-200 flex items-center gap-1 ${
+                location.pathname.startsWith("/admin")
+                  ? "text-[#111111] font-semibold border-b-2 border-[#111111]"
+                  : "text-[#666666] hover:text-[#111111]"
+              }`}
             >
-              <span>⚙️</span> Quản Trị Sàn
+              Quản Trị Sàn
             </Link>
           ) : (
             <Link
               to="/my-products"
-              className="text-[#555555] hover:text-[#111111] transition-colors pb-1"
+              className={`pb-1 transition-all duration-200 ${
+                location.pathname.startsWith("/my-products")
+                  ? "text-[#111111] font-semibold border-b-2 border-[#111111]"
+                  : "text-[#666666] hover:text-[#111111]"
+              }`}
             >
               Ký Gửi
             </Link>
@@ -169,8 +182,10 @@ export default function Navbar({ onSearch, onCategorySelect }) {
             placeholder="Tìm kiếm Rolex, Chanel, Cartier..."
             className="w-full bg-[#FAFAFA] border border-[#DCDCDA] px-3.5 py-2 pl-9 text-xs font-sans text-[#111111] placeholder-[#888888] focus:outline-none focus:border-[#111111] focus:bg-white transition-all"
           />
-          <button type="submit" className="absolute left-3 top-2.5 text-xs text-[#888888] hover:text-[#111111]">
-            🔍
+          <button type="submit" className="absolute left-3 top-3 text-[#888888] hover:text-[#111111] transition-colors">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
           </button>
           {searchQuery && (
             <button
@@ -196,12 +211,16 @@ export default function Navbar({ onSearch, onCategorySelect }) {
             title="Giỏ hàng của bạn"
             onClick={() => navigate("/cart")}
           >
-            <span className="text-base sm:text-lg">🛍️</span>
-            {cartCount > 0 && (
-              <span className="bg-[#111111] text-white text-[9px] font-mono px-1.5 py-0.5 leading-none">
-                {cartCount}
-              </span>
-            )}
+            <div className="relative flex items-center">
+              <svg className="w-5 h-5 text-[#222222] hover:text-[#000000] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.3">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+              </svg>
+              {cartCount > 0 && (
+                <span className="absolute -top-1.5 -right-2 bg-[#111111] text-white text-[8px] font-mono w-4 h-4 rounded-full flex items-center justify-center leading-none">
+                  {cartCount}
+                </span>
+              )}
+            </div>
           </button>
 
           {/* Thông báo */}
@@ -211,10 +230,14 @@ export default function Navbar({ onSearch, onCategorySelect }) {
               className="relative p-2 text-[#444444] hover:text-[#111111] transition-colors cursor-pointer"
               title="Thông báo"
             >
-              <span className="text-base sm:text-lg">🔔</span>
-              {notificationCount > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-[#D93838]"></span>
-              )}
+              <div className="relative flex items-center">
+                <svg className="w-5 h-5 text-[#222222] hover:text-[#000000] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.3">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                </svg>
+                {notificationCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-[#111111] rounded-full ring-2 ring-white"></span>
+                )}
+              </div>
             </button>
 
             {isNotifOpen && (
