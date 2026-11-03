@@ -1,11 +1,80 @@
 import pool from '../config/db.js'
 
+// Helper: Convert string into standard URL slug (e.g., "Patek Philippe" -> "patek-philippe")
+const generateSlug = (text) => {
+    return text
+        .toString()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[đĐ]/g, 'd')
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/[^\w\-]+/g, '')
+        .replace(/\-\-+/g, '-');
+};
+
+// Helper: Find brand ID by name/slug or automatically insert a new brand into database with slug
+export const findOrCreateBrand = async (brandName, preferredBrandId = null) => {
+    console.log('[DEBUG findOrCreateBrand] input:', { brandName, preferredBrandId });
+    if (brandName && typeof brandName === 'string' && brandName.trim() !== '') {
+        const cleanName = brandName.trim();
+        const brandSlug = generateSlug(cleanName);
+
+        try {
+            // 1. Check if brand exists by case-insensitive name or slug
+            const [existing] = await pool.query(
+                'SELECT id, name FROM brands WHERE LOWER(TRIM(name)) = LOWER(?) OR slug = ? LIMIT 1',
+                [cleanName, brandSlug]
+            );
+
+            if (existing.length > 0) {
+                console.log('[DEBUG findOrCreateBrand] Found existing brand:', existing[0]);
+                return existing[0].id;
+            }
+
+            // 2. Insert new brand with both name and slug
+            console.log('[DEBUG findOrCreateBrand] Inserting new brand:', { cleanName, brandSlug });
+            const [insertResult] = await pool.query(
+                'INSERT INTO brands (name, slug, created_at) VALUES (?, ?, NOW())',
+                [cleanName, brandSlug]
+            );
+            console.log('[DEBUG findOrCreateBrand] Insert success, insertId:', insertResult.insertId);
+            return insertResult.insertId;
+        } catch (err) {
+            console.error('[DEBUG findOrCreateBrand] Error during find/insert:', err.message);
+            const [fallback] = await pool.query(
+                'SELECT id FROM brands WHERE LOWER(TRIM(name)) = LOWER(?) OR slug = ? LIMIT 1',
+                [cleanName, brandSlug]
+            );
+            if (fallback.length > 0) return fallback[0].id;
+        }
+    }
+
+    // Fallback to numeric preferredBrandId if valid
+    if (preferredBrandId && Number(preferredBrandId) > 0) {
+        const [checkId] = await pool.query('SELECT id FROM brands WHERE id = ?', [preferredBrandId]);
+        if (checkId.length > 0) {
+            return checkId[0].id;
+        }
+    }
+
+    return null;
+};
+
+// Get all brands for dropdown selector
+export const getAllBrandsService = async () => {
+    const [rows] = await pool.query('SELECT id, name, slug FROM brands ORDER BY name ASC');
+    return rows;
+};
+
 // Creating and post production
 export const createListingService = async(sellerId, data)=>{
     const {
         category_id,
         title,
         brand_id,
+        brand,
         condition_grade,
         original_price,
         selling_price,
@@ -17,6 +86,9 @@ export const createListingService = async(sellerId, data)=>{
         throw { status: 400, message: 'Please fill in the title, selling price, and product category.' }
     }
 
+    // Automatically find or create brand dynamically
+    const resolvedBrandId = await findOrCreateBrand(brand, brand_id);
+
     const query = `
         INSERT INTO listings (seller_id, category_id, title, brand_id, condition_grade, original_price, selling_price, description, status, created_at) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
@@ -26,7 +98,7 @@ export const createListingService = async(sellerId, data)=>{
         sellerId,
         category_id,
         title,
-        brand_id || null,
+        resolvedBrandId || null,
         condition_grade || 'LIKE_NEW (99%)',
         original_price || null,
         selling_price,
@@ -49,6 +121,7 @@ export const createListingService = async(sellerId, data)=>{
         id: newListingId,
         seller_id: sellerId,
         ...data,
+        brand_id: resolvedBrandId,
         status: 'pending',
         created_at: new Date()
     };
@@ -196,8 +269,7 @@ export const getListingByIdServices = async(id, requester = null) => {
 
 // Update product (when user edit product => update status -> pending to admin check)
 export const updateListingServices = async (id, data) => {
-    const { title, condition_grade, original_price, selling_price, images, description } = data;
-    
+    const { title, condition_grade, original_price, selling_price, images, description, brand, brand_id } = data;
     
     const [existing] = await pool.query('SELECT * FROM listings WHERE id = ?', [id]);
     
@@ -214,15 +286,20 @@ export const updateListingServices = async (id, data) => {
     const updatedSellingPrice = selling_price !== undefined ? selling_price : currentListing.selling_price;
     const updatedDescription = description !== undefined ? description : currentListing.description;
 
+    let updatedBrandId = currentListing.brand_id;
+    if (brand !== undefined || brand_id !== undefined) {
+        updatedBrandId = await findOrCreateBrand(brand, brand_id !== undefined ? brand_id : currentListing.brand_id);
+    }
     
     const query = `
         UPDATE listings 
-        SET title = ?, condition_grade = ?, original_price = ?, selling_price = ?, description = ?, status = 'pending' 
+        SET title = ?, brand_id = ?, condition_grade = ?, original_price = ?, selling_price = ?, description = ?, status = 'pending' 
         WHERE id = ?
     `;
     
     await pool.query(query, [
-        updatedTitle, 
+        updatedTitle,
+        updatedBrandId,
         updatedCondition, 
         updatedOriginalPrice, 
         updatedSellingPrice, 
@@ -242,8 +319,14 @@ export const updateListingServices = async (id, data) => {
             await pool.query('INSERT INTO listing_images (listing_id, image_url, is_primary) VALUES ?', [imageValues]);
         }
     }
-// Return the result after the update, including the list of images
-    const [updateRow] = await pool.query('SELECT * FROM listings WHERE id = ?', [id]);
+    // Return the result after the update, including the list of images, brand_name, and category_name
+    const [updateRow] = await pool.query(`
+        SELECT listings.*, brands.name AS brand_name, categories.name AS category_name
+        FROM listings 
+        LEFT JOIN brands ON listings.brand_id = brands.id
+        LEFT JOIN categories ON listings.category_id = categories.id
+        WHERE listings.id = ?
+    `, [id]);
     const updatedListing = updateRow[0];
     const [updatedImages] = await pool.query('SELECT id, image_url, is_primary FROM listing_images WHERE listing_id = ?', [id]);
     updatedListing.images = updatedImages;

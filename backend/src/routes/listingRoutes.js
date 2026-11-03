@@ -4,6 +4,7 @@ import { verifyToken, verifyRole, optionalAuth } from '../middlwares/authmiddlwa
 import { createItemsLimiter } from '../middlwares/rateLimiter.js';
 const router = express.Router();
  
+router.get('/brands', listingController.getBrandsController);
 router.post('/create_listing',verifyToken,verifyRole(["user"]),createItemsLimiter,listingController.createListingController);
 router.get('/get_listing',listingController.getListingController);
 router.get('/get_listing/:id', optionalAuth, listingController.getListingByIdController);

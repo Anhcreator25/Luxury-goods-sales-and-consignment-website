@@ -1,5 +1,19 @@
 import * as ListingServices from "../services/Listings_services.js";
 
+export const getBrandsController = async (req, res) => {
+    try {
+        const brands = await ListingServices.getAllBrandsService();
+        return res.status(200).json({
+            success: true,
+            data: brands
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message || 'Error fetching brands'
+        });
+    }
+};
 
 export const createListingController = async (req, res) => {
     try {
