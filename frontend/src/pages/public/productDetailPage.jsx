@@ -2,16 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
-import ConditionBadge from '../../components/ConditionBadge'
 import { formatPrice, CONDITION_MAP } from '../../utils/formatters'
 import { listingServices, cartServices } from '../../services'
-
-// ─── Component ───────────────────────────────────────────────────────────────
 
 export default function ProductDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-
   const token = localStorage.getItem('token')
 
   const [product, setProduct] = useState(null)
@@ -21,7 +17,10 @@ export default function ProductDetailPage() {
   const [success, setSuccess] = useState('')
   const [cartLoading, setCartLoading] = useState(false)
 
-  // ── Fetch product ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [id])
+
   useEffect(() => {
     const fetchProduct = async () => {
       setLoading(true)
@@ -38,8 +37,6 @@ export default function ProductDetailPage() {
     fetchProduct()
   }, [id])
 
-
-  // ── Add to cart ────────────────────────────────────────────────────────────
   const handleAddToCart = async () => {
     setError('')
     setSuccess('')
@@ -52,7 +49,7 @@ export default function ProductDetailPage() {
     setCartLoading(true)
     try {
       await cartServices.addToCart(id, 1)
-      setSuccess('Đã thêm vào giỏ hàng!')
+      setSuccess('Đã thêm tác phẩm vào giỏ hàng thành công!')
       window.dispatchEvent(new Event('cart-updated'))
     } catch (err) {
       const errorMsg =
@@ -66,33 +63,25 @@ export default function ProductDetailPage() {
     }
   }
 
-  // ── Buy now ────────────────────────────────────────────────────────────────
   const handleBuyNow = async () => {
     setError('')
     setSuccess('')
 
     if (!token) {
-      setError('Vui lòng đăng nhập để thêm vào giỏ hàng')
+      navigate('/login')
       return
     }
 
     setCartLoading(true)
     try {
-      await cartServices.addToCart(id, quantity)
+      await cartServices.addToCart(id, 1)
       window.dispatchEvent(new Event('cart-updated'))
       navigate('/cart')
     } catch (err) {
-      const errorMsg =
-        (typeof err === 'string' ? err : null) ||
-        err?.message ||
-        err?.response?.data?.message ||
-        'Không thể thêm vào giỏ hàng. Vui lòng thử lại.'
-      setError(errorMsg)
+      setError('Không thể xử lý yêu cầu. Vui lòng thử lại.')
       setCartLoading(false)
     }
   }
-
-  // ── Render ─────────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -100,9 +89,9 @@ export default function ProductDetailPage() {
         <Navbar />
         <div className="flex items-center justify-center h-[70vh]">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-2 border-[#111111] border-t-transparent rounded-full animate-spin" />
-            <p className="text-xs font-mono uppercase tracking-wider text-[#888888]">
-              Đang tải sản phẩm...
+            <div className="w-8 h-8 border border-[#111111] border-t-transparent rounded-full animate-spin" />
+            <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#888888]">
+              Đang đối soát chứng thư sản phẩm...
             </p>
           </div>
         </div>
@@ -114,21 +103,22 @@ export default function ProductDetailPage() {
     return (
       <div className="min-h-screen bg-[#FBFBFA]">
         <Navbar />
-        <div className="max-w-2xl mx-auto px-6 py-20 text-center">
-          <div className="w-16 h-16 bg-[#FAFAFA] border border-[#E5E5E3] flex items-center justify-center mx-auto mb-4 text-2xl">
-            📦
+        <div className="max-w-2xl mx-auto px-6 py-28 text-center">
+          <div className="w-16 h-16 bg-white border border-[#E5E5E3] flex items-center justify-center mx-auto mb-5 text-2xl font-serif text-[#999999]">
+            ◇
           </div>
-          <h2 className="text-xl font-bold font-serif mb-2">Không tìm thấy sản phẩm</h2>
-          <p className="text-sm text-[#777777] mb-6">
-            Sản phẩm này có thể đã được bán hoặc chưa được phê duyệt.
+          <h2 className="text-2xl font-serif text-[#111111] mb-2 font-normal">Không Tìm Thấy Tác Phẩm</h2>
+          <p className="text-xs text-[#777777] font-sans mb-8 leading-relaxed max-w-md mx-auto">
+            Vật phẩm này có thể đã được giao dịch thành công hoặc đang trong quy trình tái kiểm định của Aura Vault.
           </p>
           <Link
             to="/shop"
-            className="inline-block px-6 py-3 bg-[#111111] text-white text-xs font-mono uppercase tracking-widest hover:bg-[#333333] transition"
+            className="inline-block px-8 py-3.5 bg-[#111111] text-white text-xs font-mono uppercase tracking-[0.2em] hover:bg-[#2A2A2A] transition"
           >
-            Khám phá bộ sưu tập
+            Khám phá bộ sưu tập khác →
           </Link>
         </div>
+        <Footer />
       </div>
     )
   }
@@ -139,234 +129,213 @@ export default function ProductDetailPage() {
 
   const images = rawImages
   const hasImages = images.length > 0
-  const mainImageSrc = hasImages ? images[activeImage] : null
+  const mainImageSrc = hasImages ? images[activeImage] : "https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=800&q=80"
 
-  const conditionInfo = CONDITION_MAP[product?.condition_grade] || { label: product?.condition_grade || 'Tiêu chuẩn' }
+  const conditionInfo = CONDITION_MAP[product?.condition_grade] || { label: product?.condition_grade || 'Tiêu chuẩn thẩm định' }
   const badgeLabel = conditionInfo.label
 
   return (
-    <div className="min-h-screen bg-[#FBFBFA]">
+    <div className="min-h-screen bg-[#FBFBFA] selection:bg-[#111111] selection:text-white">
       <Navbar />
 
-      {/* ── Breadcrumb ─────────────────────────────────────────────────────── */}
-      <div className="border-b border-[#E5E5E3]">
-        <div className="max-w-7xl mx-auto px-6 py-3">
-          <nav className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#888888]">
+      {/* ── Breadcrumb ── */}
+      <div className="border-b border-[#EAEAE8] bg-white/60">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-3.5">
+          <nav className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-[#888888]">
             <Link to="/" className="hover:text-[#111111] transition-colors">
               Trang Chủ
             </Link>
-            <span>/</span>
-            <Link to="/products" className="hover:text-[#111111] transition-colors">
-              Sản Phẩm
+            <span className="text-[#CCCCCC]">/</span>
+            <Link to="/shop" className="hover:text-[#111111] transition-colors">
+              Bộ Sưu Tập
             </Link>
-            <span>/</span>
-            <span className="text-[#111111] truncate max-w-[220px]">{product?.title}</span>
+            <span className="text-[#CCCCCC]">/</span>
+            <span className="text-[#111111] truncate max-w-[280px] font-medium">{product?.title}</span>
           </nav>
         </div>
       </div>
 
-      {/* ── Main Content ───────────────────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-6 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      {/* ── Main Showcase Grid ── */}
+      <main className="max-w-7xl mx-auto px-6 lg:px-12 py-12 lg:py-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
 
-          {/* ── LEFT: Image Gallery ──────────────────────────────────────── */}
-          <div className="flex flex-col gap-4">
-            {/* Main image */}
-            <div className="w-full aspect-square bg-[#F5F5F4] border border-[#E5E5E3] overflow-hidden flex items-center justify-center">
-              {hasImages ? (
-                <img
-                  src={mainImageSrc}
-                  alt={product?.title}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="flex flex-col items-center gap-2 text-[#BBBBBB]">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-14 h-14"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                  <span className="text-xs font-mono uppercase tracking-wider">
-                    Không có ảnh
-                  </span>
+          {/* ── LEFT: Studio Gallery (7 Columns) ── */}
+          <div className="lg:col-span-7 flex flex-col gap-4 sticky top-24">
+            {/* Main Stage Image */}
+            <div className="w-full aspect-[4/5] bg-[#F7F7F6] border border-[#EAEAE8] overflow-hidden relative group">
+              <img
+                src={mainImageSrc}
+                alt={product?.title}
+                className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
+              />
+
+              {/* Floating Verified Stamp */}
+              <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md border border-[#E5E5E3] text-[#111111] text-[9px] font-mono tracking-[0.2em] uppercase px-3 py-1.5 shadow-sm">
+                ✓ Aura Vault Authenticated
+              </div>
+
+              {/* Condition Badge */}
+              {product?.condition_grade && (
+                <div className="absolute top-4 right-4 bg-[#111111] text-white text-[9px] font-mono tracking-widest uppercase px-3 py-1.5 shadow-sm">
+                  {badgeLabel}
                 </div>
               )}
             </div>
 
-            {/* Thumbnails */}
-            {hasImages && (
-              <div className="grid grid-cols-4 gap-2">
-                {images.slice(0, 4).map((src, idx) => (
+            {/* Thumbnail Strip */}
+            {hasImages && images.length > 1 && (
+              <div className="grid grid-cols-5 gap-3 pt-1">
+                {images.slice(0, 5).map((src, idx) => (
                   <button
                     key={idx}
                     onClick={() => setActiveImage(idx)}
-                    className={`aspect-square bg-[#F5F5F4] border overflow-hidden transition-all ${
+                    className={`aspect-square bg-[#F7F7F6] border overflow-hidden transition-all duration-200 cursor-pointer ${
                       activeImage === idx
-                        ? 'border-[#111111]'
-                        : 'border-[#E5E5E3] hover:border-[#AAAAAA]'
+                        ? 'border-[#111111] ring-1 ring-[#111111]'
+                        : 'border-[#EAEAE8] opacity-70 hover:opacity-100 hover:border-[#111111]'
                     }`}
                   >
                     <img
                       src={src}
-                      alt={`Ảnh ${idx + 1}`}
+                      alt={`Góc chụp ${idx + 1}`}
                       className="w-full h-full object-cover"
                     />
                   </button>
                 ))}
               </div>
             )}
-
-            {/* Placeholder thumbnails when no images */}
-            {!hasImages && (
-              <div className="grid grid-cols-4 gap-2">
-                {Array.from({ length: 4 }).map((_, idx) => (
-                  <div
-                    key={idx}
-                    className="aspect-square bg-[#F0F0EE] border border-[#E5E5E3]"
-                  />
-                ))}
-              </div>
-            )}
           </div>
 
-          {/* ── RIGHT: Product Info ──────────────────────────────────────── */}
-          <div className="flex flex-col gap-5">
+          {/* ── RIGHT: Acquisition & Provenance Dossier (5 Columns) ── */}
+          <div className="lg:col-span-5 flex flex-col space-y-7">
 
-            {/* Brand */}
-            <p className="text-xs font-mono uppercase tracking-wider text-[#888888]">
-              {product?.brand_name || product?.brand || 'Luxury Consignment'}
-            </p>
-
-            {/* Title */}
-            <h1 className="text-2xl font-serif font-bold text-[#111111] leading-snug">
-              {product?.title}
-            </h1>
-
-            {/* Price */}
-            <p className="text-3xl font-bold text-[#111111]">
-              {formatPrice(product?.selling_price ?? product?.price ?? 0)}
-            </p>
-
-            {/* Condition badge */}
-            {product?.condition_grade && (
-              <div className="flex items-center gap-2">
-                <ConditionBadge grade={product.condition_grade} className="text-xs px-3 py-1" />
+            {/* Header: Maison & Title */}
+            <div className="border-b border-[#EAEAE8] pb-6 space-y-2.5">
+              <div className="flex items-center justify-between text-xs font-mono uppercase tracking-[0.25em] text-[#888888]">
+                <span className="text-[#111111] font-semibold tracking-[0.3em]">{product?.brand_name || product?.brand || 'Haute Maison'}</span>
+                <span>Mã số: #{String(product?.id ?? id).padStart(5, '0')}</span>
               </div>
-            )}
+              <h1 className="text-2xl sm:text-3xl font-serif text-[#111111] leading-tight font-normal">
+                {product?.title}
+              </h1>
+            </div>
 
-            {/* Divider */}
-            <hr className="border-[#E5E5E3]" />
+            {/* Price Box */}
+            <div className="space-y-1">
+              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#888888] block">Giá Ký Gửi Niêm Yết</span>
+              <div className="flex items-baseline gap-4">
+                <span className="text-3xl sm:text-4xl font-mono font-medium text-[#111111]">
+                  {formatPrice(product?.selling_price ?? product?.price ?? 0)}
+                </span>
+                {product?.original_price && product.original_price > (product.selling_price || product.price) && (
+                  <span className="text-xs font-mono text-[#999999] line-through">
+                    {formatPrice(product.original_price)}
+                  </span>
+                )}
+              </div>
+            </div>
 
-            {/* ── THÔNG TIN SẢN PHẨM ─────────────────────────────────── */}
-            <div className="flex flex-col gap-4">
-              <p className="text-xs font-mono uppercase tracking-wider text-[#444444]">
-                Thông Tin Sản Phẩm
-              </p>
-
-              {/* Description */}
-              {product?.description && (
-                <p className="text-sm text-[#555555] leading-relaxed">
-                  {product.description}
-                </p>
+            {/* Action Buttons: Add to Cart & Buy Now */}
+            <div className="space-y-3 pt-2">
+              {error && (
+                <div className="bg-[#FDF2F2] border-l-2 border-[#D93838] text-[#9A2222] px-4 py-2.5 text-xs font-mono">
+                  {error}
+                </div>
+              )}
+              {success && (
+                <div className="bg-[#F2F8F4] border-l-2 border-[#1E7E34] text-[#155724] px-4 py-2.5 text-xs font-mono">
+                  {success}
+                </div>
               )}
 
-              {/* Info grid */}
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3 mt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  onClick={handleAddToCart}
+                  disabled={cartLoading}
+                  className="w-full py-4 bg-white border border-[#111111] text-[#111111] hover:bg-[#F5F5F3] text-xs font-mono uppercase tracking-[0.2em] transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {cartLoading ? 'Đang Xử Lý...' : 'Thêm Vào Giỏ'}
+                </button>
+                <button
+                  onClick={handleBuyNow}
+                  disabled={cartLoading}
+                  className="w-full py-4 bg-[#111111] text-white hover:bg-[#2A2A2A] text-xs font-mono uppercase tracking-[0.2em] transition-all cursor-pointer shadow-lg disabled:opacity-50"
+                >
+                  Mua Ngay →
+                </button>
+              </div>
+
+              {!token && (
+                <p className="text-[11px] text-[#888888] font-mono text-center pt-1">
+                  Đã có tài khoản?{' '}
+                  <Link to="/login" className="text-[#111111] underline underline-offset-2 hover:text-black">
+                    Đăng nhập
+                  </Link>{' '}
+                  để hoàn tất giao dịch bảo chứng.
+                </p>
+              )}
+            </div>
+
+            {/* ── 3 Trụ Cột Bảo Chứng (Trust Pillars) ── */}
+            <div className="bg-[#F8F8F7] border border-[#EAEAE8] p-5 space-y-3.5">
+              <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#111111] font-semibold flex items-center gap-2">
+                <span>🛡️</span>
+                <span>Bảo Chứng Độc Quyền Từ Aura Vault</span>
+              </div>
+              <ul className="space-y-2.5 text-xs text-[#555555] font-light">
+                <li className="flex items-start gap-2">
+                  <span className="text-[#111111] font-bold">✓</span>
+                  <span><strong>100% Giám định độc lập</strong> bởi chuyên gia quốc tế trước khi bàn giao.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#111111] font-bold">✓</span>
+                  <span><strong>Cơ chế Escrow ký quỹ</strong> bảo vệ toàn vẹn dòng tiền của người mua.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#111111] font-bold">✓</span>
+                  <span><strong>Bảo hiểm vận chuyển chuyên biệt</strong> bồi thường 100% giá trị bảo vật.</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* ── Thông Số Giám Định (Provenance & Specs) ── */}
+            <div className="border-t border-[#EAEAE8] pt-6 space-y-4">
+              <h3 className="text-xs font-mono uppercase tracking-[0.2em] text-[#111111] font-semibold">
+                Thông Số &amp; Chứng Thư Lưu Hành
+              </h3>
+              
+              <div className="divide-y divide-[#F0F0EE] text-xs">
                 {[
-                  { label: 'Thương Hiệu', value: product?.brand },
-                  { label: 'Danh Mục', value: product?.category },
-                  { label: 'Tình Trạng', value: badgeLabel },
-                  { label: 'Mã Sản Phẩm', value: product?.id ?? id },
+                  { label: 'Thương Hiệu', value: product?.brand_name || product?.brand || 'Chính hãng' },
+                  { label: 'Phân Hạng Danh Mục', value: product?.category_name || product?.category || 'Tuyển tập đặc biệt' },
+                  { label: 'Tình Trạng Thực Tế', value: badgeLabel },
+                  { label: 'Quy Chuẩn Đóng Gói', value: 'Fullbox / Niêm phong hộp bảo hiểm Aura' },
+                  { label: 'Kiểm Định Viên', value: 'Hội đồng giám định độc lập Aura Vault' },
                 ].map(({ label, value }) => (
-                  <div key={label} className="flex flex-col gap-0.5">
-                    <span className="text-xs font-mono uppercase tracking-wider text-[#888888]">
-                      {label}
-                    </span>
-                    <span className="text-sm text-[#111111] font-medium">
-                      {value ?? '—'}
-                    </span>
+                  <div key={label} className="py-2.5 flex justify-between items-center font-mono">
+                    <span className="text-[#888888] uppercase tracking-wider text-[11px]">{label}</span>
+                    <span className="text-[#111111] font-medium text-right">{value}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Divider */}
-            <hr className="border-[#E5E5E3]" />
-
-            {/* ── GIẤY TỜ & KIỂM ĐỊNH ────────────────────────────────── */}
-            <div className="flex flex-col gap-3">
-              <p className="text-xs font-mono uppercase tracking-wider text-[#444444]">
-                Giấy Tờ &amp; Kiểm Định
-              </p>
-              <div className="flex flex-col gap-2">
-                {[
-                  'Kiểm Định Chính Hãng',
-                  'Bảo Hành Sàn 30 Ngày',
-                  'Cam Kết Hoàn Tiền',
-                ].map((item) => (
-                  <div key={item} className="flex items-center gap-2">
-                    <span className="w-5 h-5 flex items-center justify-center bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex-shrink-0">
-                      ✓
-                    </span>
-                    <span className="text-sm text-[#333333]">{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Divider */}
-            <hr className="border-[#E5E5E3]" />
-
-           
-
-            {/* ── Banners ─────────────────────────────────────────────── */}
-            {error && (
-              <div className="bg-[#FDF2F2] border-l-2 border-[#D93838] text-[#9A2222] px-4 py-3 text-sm">
-                {error}
+            {/* ── Mô Tả Chi Tiết ── */}
+            {product?.description && (
+              <div className="border-t border-[#EAEAE8] pt-6 space-y-3">
+                <h3 className="text-xs font-mono uppercase tracking-[0.2em] text-[#111111] font-semibold">
+                  Mô Tả Hiện Trạng Bảo Vật
+                </h3>
+                <p className="text-xs sm:text-sm text-[#666666] leading-relaxed font-light whitespace-pre-line">
+                  {product.description}
+                </p>
               </div>
             )}
-            {success && (
-              <div className="bg-[#F2F8F4] border-l-2 border-[#1E7E34] text-[#155724] px-4 py-3 text-sm">
-                {success}
-              </div>
-            )}
-
-            {/* ── Login notice ─────────────────────────────────────────── */}
-            {!token && (
-              <p className="text-xs text-[#888888] font-mono">
-                Bạn chưa đăng nhập.{' '}
-                <Link to="/login" className="text-[#111111] underline hover:text-[#444444]">
-                  Đăng nhập
-                </Link>{' '}
-                để thêm sản phẩm vào giỏ hàng.
-              </p>
-            )}
-
-            {/* ── CTA Buttons ──────────────────────────────────────────── */}
-            <div className="flex flex-col gap-3 mt-1">
-              <button
-                onClick={handleAddToCart}
-                disabled={cartLoading}
-                className="w-full py-4 bg-[#111111] text-white text-sm font-mono uppercase tracking-wider hover:bg-[#2A2A2A] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {cartLoading ? 'Đang xử lý...' : 'Thêm Vào Giỏ Hàng'}
-              </button>
-             
-            </div>
 
           </div>
-          {/* end RIGHT */}
         </div>
-      </div>
+      </main>
+
       <Footer />
     </div>
   )
