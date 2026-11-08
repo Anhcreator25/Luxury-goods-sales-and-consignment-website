@@ -1,6 +1,6 @@
 import pool from "../config/db.js";
 
-// Creat order from cart
+// Create order from cart
 export const createOrderServices = async (userId, orderData,cartItemId)=> {
 
        if(!cartItemId || !Array.isArray(cartItemId)|| cartItemId.length===0){
@@ -44,11 +44,11 @@ export const createOrderServices = async (userId, orderData,cartItemId)=> {
                 }
             }
             
-            //Caculate totalAmount 
+            // Caculate totalAmount & Platform Commission (3%)
             const totalAmount = cartItems.reduce((sum,item)=> sum + (item.selling_price * item.quantity),0);
-            const COMMISSON_RATE = 0.15;
-            const commissionFee= totalAmount*COMMISSON_RATE;
-            const sellPayout = totalAmount-commissionFee;
+            const COMMISSON_RATE = parseFloat(process.env.PLATFORM_COMMISSION_RATE) || 0.03;
+            const commissionFee = Math.round(totalAmount * COMMISSON_RATE);
+            const sellPayout = totalAmount - commissionFee;
             
             const normalizedMethod = payment_method || 'BANK_TRANSFER';
             

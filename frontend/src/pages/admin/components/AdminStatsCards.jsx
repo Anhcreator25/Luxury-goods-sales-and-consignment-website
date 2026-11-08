@@ -1,5 +1,6 @@
 import React from 'react'
 import { formatPrice } from '../../../utils/formatters'
+import { PLATFORM_CONFIG } from '../../../config/platformConfig'
 
 export default function AdminStatsCards({ stats, loadingStats }) {
   const cards = [
@@ -9,9 +10,9 @@ export default function AdminStatsCards({ stats, loadingStats }) {
       sub: 'Từ đơn thanh toán thành công',
     },
     {
-      label: 'Hoa Hồng Sàn (15%)',
+      label: `Hoa Hồng Sàn (${PLATFORM_CONFIG.commissionPercent}%)`,
       value: loadingStats ? '—' : formatPrice(stats.commission),
-      sub: '15% trên đơn thành công',
+      sub: `${PLATFORM_CONFIG.commissionPercent}% trên đơn thành công`,
     },
     {
       label: 'Đơn Thành Công',

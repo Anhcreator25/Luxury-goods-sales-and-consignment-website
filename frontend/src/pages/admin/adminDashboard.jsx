@@ -9,6 +9,7 @@ import AdminOrdersTable from './components/AdminOrdersTable'
 import AdminPendingListings from './components/AdminPendingListings'
 import AdminListingDetailModal from './components/AdminListingDetailModal'
 import AdminUsersTab from './components/AdminUsersTab'
+import { PLATFORM_CONFIG } from '../../config/platformConfig'
 
 // Navigation tab identifiers
 const TABS = [
@@ -101,9 +102,7 @@ export default function AdminDashboard() {
           const cancelledOrders = orders.filter(isCancelledOrder)
 
           const revenue = paidOrders.reduce((s, o) => s + (Number(o.total_price || o.total_amount) || 0), 0)
-          const commission = paidOrders.reduce((s, o) => 
-            s + (Number(o.commission_fee) || Math.round((Number(o.total_price || o.total_amount) || 0) * 0.15)), 0
-          )
+          const commission = Math.round(revenue * PLATFORM_CONFIG.COMMISSION_RATE)
 
           setStats(prev => ({
             ...prev,

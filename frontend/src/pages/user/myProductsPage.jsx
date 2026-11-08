@@ -4,6 +4,7 @@ import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import { listingServices } from '../../services'
 import { formatPrice } from '../../utils/formatters'
+import { PLATFORM_CONFIG } from '../../config/platformConfig'
 
 // Listing consignment approval status badges
 const STATUS_BADGE = {
@@ -557,6 +558,18 @@ export default function MyProductsPage() {
                     placeholder="Ví dụ: 25000000"
                     className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#111111] transition-colors duration-150"
                   />
+                  {form.price && Number(form.price) > 0 && (
+                    <div className="mt-2 p-2.5 bg-[#F9F9F8] border border-[#E5E5E3] space-y-1 text-xs font-mono">
+                      <div className="flex justify-between text-[#777777]">
+                        <span>Phí sàn bảo chứng ({PLATFORM_CONFIG.commissionPercent}%):</span>
+                        <span>-{formatPrice(Math.round(Number(form.price) * PLATFORM_CONFIG.COMMISSION_RATE))}</span>
+                      </div>
+                      <div className="flex justify-between font-semibold text-[#1E7E34] border-t border-[#EAEAE8] pt-1">
+                        <span>Thực nhận về tài khoản ({PLATFORM_CONFIG.sellerPayoutPercent}%):</span>
+                        <span>{formatPrice(Math.round(Number(form.price) * (1 - PLATFORM_CONFIG.COMMISSION_RATE)))}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-mono uppercase tracking-wider text-[#444444] mb-1.5">

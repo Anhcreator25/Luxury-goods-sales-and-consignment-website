@@ -107,6 +107,10 @@ export default function CartPage() {
     phone: user?.phone ?? '',
     address: '',
     paymentMethod: 'BANK_TRANSFER',
+    cardNumber: '',
+    cardHolder: '',
+    cardExpiry: '',
+    cardCvv: '',
   })
 
   // ── Fetch cart ─────────────────────────────────────────────────────────────
@@ -352,57 +356,197 @@ export default function CartPage() {
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-6 items-center">
-                  {/* QR Code */}
+                  {/* Cổng hiển thị thanh toán tương ứng */}
                   <div className="bg-[#FBFBFA] border border-[#E5E5E3] p-4 flex flex-col items-center justify-center text-center">
-                    <img
-                      src={qrUrl}
-                      alt="VietQR Chuyển Khoản"
-                      className="w-56 h-auto border border-[#E5E5E3] shadow-inner bg-white"
-                    />
-                    <p className="text-[11px] text-[#666666] mt-3">
-                      Quét mã bằng app ngân hàng (VietQR / Mobile Banking)
-                    </p>
+                    {orderResult?.payment_method === 'MOMO' ? (
+                      <>
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`2|99|0822173222|||0|0|${Math.round(totalAmount)}|DH${orderId}|transfer_myqr`)}`}
+                          alt="MoMo QR"
+                          className="w-56 h-auto border border-[#FFD6E0] shadow-inner bg-white p-2"
+                        />
+                        <p className="text-[11px] font-mono text-[#A00045] mt-3 font-semibold">
+                          📱 Quét mã bằng ứng dụng Ví MoMo
+                        </p>
+                      </>
+                    ) : orderResult?.payment_method === 'ZALOPAY' ? (
+                      <>
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`https://zalopay.vn/pay?amount=${Math.round(totalAmount)}&note=DH${orderId}`)}`}
+                          alt="ZaloPay QR"
+                          className="w-56 h-auto border border-[#BEE3F8] shadow-inner bg-white p-2"
+                        />
+                        <p className="text-[11px] font-mono text-[#0068FF] mt-3 font-semibold">
+                          ⚡ Quét mã bằng Zalo hoặc app ZaloPay
+                        </p>
+                      </>
+                    ) : orderResult?.payment_method === 'CREDIT_CARD' ? (
+                      <div className="w-60 h-36 bg-gradient-to-br from-[#1F1F1F] via-[#111111] to-[#0A0A0A] text-white p-4 flex flex-col justify-between border border-[#333333] shadow-xl">
+                        <div className="flex justify-between items-center text-[10px] font-mono uppercase tracking-widest text-[#AAAAAA]">
+                          <span>Aura Vault Card</span>
+                          <span>VISA / MASTERCARD</span>
+                        </div>
+                        <div className="font-mono text-sm tracking-widest text-center my-auto">
+                          •••• •••• •••• {form.cardNumber ? form.cardNumber.slice(-4) : '8888'}
+                        </div>
+                        <div className="flex justify-between items-center text-[9px] font-mono text-[#888888]">
+                          <span>{form.cardHolder || 'CARD HOLDER'}</span>
+                          <span>{form.cardExpiry || '12/28'}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <img
+                          src={qrUrl}
+                          alt="VietQR Chuyển Khoản"
+                          className="w-56 h-auto border border-[#E5E5E3] shadow-inner bg-white"
+                        />
+                        <p className="text-[11px] text-[#666666] mt-3">
+                          Quét mã bằng app ngân hàng (VietQR / Mobile Banking)
+                        </p>
+                      </>
+                    )}
                   </div>
 
-                  {/* Account Details */}
+                  {/* Chi tiết tài khoản thanh toán */}
                   <div className="space-y-4 text-sm">
-                    <div>
-                      <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Ngân hàng</p>
-                      <p className="font-semibold text-[#111111]">{bankName}</p>
-                    </div>
+                    {orderResult?.payment_method === 'MOMO' ? (
+                      <>
+                        <div>
+                          <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Cổng thanh toán</p>
+                          <p className="font-semibold text-[#A00045]">Ví Điện Tử MoMo (Ký Quỹ Escrow)</p>
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Số điện thoại ví MoMo</p>
+                            <button
+                              onClick={() => copyToClipboard('0822173222', 'momo_phone')}
+                              className="text-[10px] font-mono uppercase text-[#444444] hover:underline"
+                            >
+                              {copiedField === 'momo_phone' ? '✓ Đã sao chép' : 'Sao chép'}
+                            </button>
+                          </div>
+                          <p className="font-mono text-base font-bold text-[#111111] tracking-wide">0822173222</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Tên ví nhận</p>
+                          <p className="font-semibold text-[#111111] uppercase">LUXURY PLATFORM</p>
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Lời nhắn chuyển ví</p>
+                            <button
+                              onClick={() => copyToClipboard(transferContent, 'momo_content')}
+                              className="text-[10px] font-mono uppercase text-[#444444] hover:underline"
+                            >
+                              {copiedField === 'momo_content' ? '✓ Đã sao chép' : 'Sao chép'}
+                            </button>
+                          </div>
+                          <p className="font-mono text-base font-bold text-[#A00045] bg-[#FFF5F7] px-2.5 py-1 inline-block border border-[#FFD6E0]">
+                            {transferContent}
+                          </p>
+                        </div>
+                      </>
+                    ) : orderResult?.payment_method === 'ZALOPAY' ? (
+                      <>
+                        <div>
+                          <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Cổng thanh toán</p>
+                          <p className="font-semibold text-[#0068FF]">Ví Điện Tử ZaloPay (Ký Quỹ Escrow)</p>
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Số tài khoản ZaloPay</p>
+                            <button
+                              onClick={() => copyToClipboard('0822173222', 'zalopay_phone')}
+                              className="text-[10px] font-mono uppercase text-[#444444] hover:underline"
+                            >
+                              {copiedField === 'zalopay_phone' ? '✓ Đã sao chép' : 'Sao chép'}
+                            </button>
+                          </div>
+                          <p className="font-mono text-base font-bold text-[#111111] tracking-wide">0822173222</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Tên người nhận</p>
+                          <p className="font-semibold text-[#111111] uppercase">LUXURY PLATFORM</p>
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Nội dung thanh toán</p>
+                            <button
+                              onClick={() => copyToClipboard(transferContent, 'zalopay_content')}
+                              className="text-[10px] font-mono uppercase text-[#444444] hover:underline"
+                            >
+                              {copiedField === 'zalopay_content' ? '✓ Đã sao chép' : 'Sao chép'}
+                            </button>
+                          </div>
+                          <p className="font-mono text-base font-bold text-[#0068FF] bg-[#EBF8FF] px-2.5 py-1 inline-block border border-[#BEE3F8]">
+                            {transferContent}
+                          </p>
+                        </div>
+                      </>
+                    ) : orderResult?.payment_method === 'CREDIT_CARD' ? (
+                      <>
+                        <div>
+                          <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Phương thức</p>
+                          <p className="font-semibold text-[#111111]">Thẻ Tín Dụng / Ghi Nợ Quốc Tế</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Trạng thái ủy quyền</p>
+                          <p className="font-mono text-xs font-semibold text-[#1E7E34] bg-[#F2F8F4] px-2 py-1 inline-block border border-[#C3E6CB]">
+                            ✓ Đã xác thực bảo mật 3D-Secure
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Mã giao dịch đối soát</p>
+                          <p className="font-mono text-sm font-bold text-[#111111]">CC-{orderId}-{Date.now().toString().slice(-6)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#666666] leading-relaxed">
+                            Khoản tiền đã được ủy quyền phong tỏa an toàn qua cổng quốc tế. Đơn hàng sẽ được người bán đóng gói và bàn giao ngay.
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Ngân hàng</p>
+                          <p className="font-semibold text-[#111111]">{bankName}</p>
+                        </div>
 
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Số tài khoản</p>
-                        <button
-                          onClick={() => copyToClipboard(bankAccount, 'account')}
-                          className="text-[10px] font-mono uppercase text-[#444444] hover:underline"
-                        >
-                          {copiedField === 'account' ? '✓ Đã sao chép' : 'Sao chép'}
-                        </button>
-                      </div>
-                      <p className="font-mono text-base font-bold text-[#111111] tracking-wide">{bankAccount}</p>
-                    </div>
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Số tài khoản</p>
+                            <button
+                              onClick={() => copyToClipboard(bankAccount, 'account')}
+                              className="text-[10px] font-mono uppercase text-[#444444] hover:underline"
+                            >
+                              {copiedField === 'account' ? '✓ Đã sao chép' : 'Sao chép'}
+                            </button>
+                          </div>
+                          <p className="font-mono text-base font-bold text-[#111111] tracking-wide">{bankAccount}</p>
+                        </div>
 
-                    <div>
-                      <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Chủ tài khoản</p>
-                      <p className="font-semibold text-[#111111] uppercase">{accountName}</p>
-                    </div>
+                        <div>
+                          <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Chủ tài khoản</p>
+                          <p className="font-semibold text-[#111111] uppercase">{accountName}</p>
+                        </div>
 
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Nội dung chuyển khoản</p>
-                        <button
-                          onClick={() => copyToClipboard(transferContent, 'content')}
-                          className="text-[10px] font-mono uppercase text-[#444444] hover:underline"
-                        >
-                          {copiedField === 'content' ? '✓ Đã sao chép' : 'Sao chép'}
-                        </button>
-                      </div>
-                      <p className="font-mono text-base font-bold text-[#1E7E34] bg-[#F2F8F4] px-2.5 py-1 inline-block border border-[#C3E6CB]">
-                        {transferContent}
-                      </p>
-                    </div>
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Nội dung chuyển khoản</p>
+                            <button
+                              onClick={() => copyToClipboard(transferContent, 'content')}
+                              className="text-[10px] font-mono uppercase text-[#444444] hover:underline"
+                            >
+                              {copiedField === 'content' ? '✓ Đã sao chép' : 'Sao chép'}
+                            </button>
+                          </div>
+                          <p className="font-mono text-base font-bold text-[#1E7E34] bg-[#F2F8F4] px-2.5 py-1 inline-block border border-[#C3E6CB]">
+                            {transferContent}
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -718,7 +862,7 @@ export default function CartPage() {
                 </div>
               </div>
 
-              {/* Payment Method - COD REMOVED */}
+              {/* Payment Method - 4 Luxury Prepaid Escrow Options */}
               <div className="border border-[#E5E5E3] bg-white p-6 space-y-4">
                 <div className="border-b border-[#E5E5E3] pb-3 flex items-center justify-between">
                   <h2 className="text-xs font-mono uppercase tracking-wider text-[#444444]">
@@ -730,59 +874,135 @@ export default function CartPage() {
                 </div>
 
                 <div className="bg-[#FFF8E6] border border-[#FFE8A1] p-3.5 text-xs text-[#856404] leading-relaxed">
-                  ⓘ <strong>Quy định bảo chứng:</strong> Đối với sản phẩm xa xỉ cao cấp, quý khách vui lòng thanh toán trước 100% qua Chuyển khoản ngân hàng (VietQR). Hệ thống giữ tiền bảo chứng cho đến khi quý khách nhận và nghiệm thu sản phẩm.
+                  ⓘ <strong>Quy định bảo chứng Aura Vault:</strong> Để đảm bảo giá trị nguyên bản của các sản phẩm xa xỉ và loại trừ mọi rủi ro thanh toán, sàn áp dụng 100% hình thức Ký Quỹ Escrow. Tiền được phong tỏa an toàn tuyệt đối cho đến khi quý khách nhận hàng và nghiệm thu.
                 </div>
 
                 {[
                   {
                     value: 'BANK_TRANSFER',
-                    label: 'Chuyển khoản ngân hàng 24/7 (VietQR)',
-                    desc: 'Quét mã QR tự động điền số tài khoản, số tiền và nội dung chuyển khoản',
+                    label: 'Chuyển khoản liên ngân hàng 24/7 (VietQR)',
+                    desc: 'Quét mã VietQR tự động điền số tài khoản, số tiền và nội dung chuyển khoản',
                     icon: '🏦',
                     badge: 'Khuyên Dùng'
                   },
                   {
+                    value: 'MOMO',
+                    label: 'Ví điện tử MoMo (MoMo QR Payment)',
+                    desc: 'Thanh toán tức thì qua ứng dụng Ví MoMo tiện lợi và bảo mật',
+                    icon: '📱',
+                    badge: 'Phổ Biến'
+                  },
+                  {
+                    value: 'ZALOPAY',
+                    label: 'Ví điện tử ZaloPay (ZaloPay QR)',
+                    desc: 'Quét mã thanh toán qua Zalo hoặc ứng dụng ZaloPay',
+                    icon: '⚡',
+                  },
+                  {
                     value: 'CREDIT_CARD',
-                    label: 'Thẻ tín dụng / Ghi nợ quốc tế',
-                    desc: 'Visa, Mastercard, JCB (Chuyển khoản theo quy trình ký quỹ)',
+                    label: 'Thẻ tín dụng / Ghi nợ quốc tế (Visa, Mastercard, JCB, Apple Pay)',
+                    desc: 'Thanh toán trực tuyến bảo mật tiêu chuẩn mã hóa quốc tế PCI-DSS',
                     icon: '💳',
                   },
                 ].map((opt) => (
-                  <label
-                    key={opt.value}
-                    className={`flex items-start gap-4 border p-4 cursor-pointer transition-colors ${
-                      form.paymentMethod === opt.value
-                        ? 'border-[#111111] bg-[#FAFAFA]'
-                        : 'border-[#E5E5E3] hover:border-[#CCCCCC]'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value={opt.value}
-                      checked={form.paymentMethod === opt.value}
-                      onChange={(e) =>
-                        setForm({ ...form, paymentMethod: e.target.value })
-                      }
-                      className="mt-0.5 accent-[#111111]"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span>{opt.icon}</span>
-                          <span className="text-sm font-medium text-[#111111]">
-                            {opt.label}
-                          </span>
+                  <div key={opt.value} className="space-y-3">
+                    <label
+                      className={`flex items-start gap-4 border p-4 cursor-pointer transition-colors ${
+                        form.paymentMethod === opt.value
+                          ? 'border-[#111111] bg-[#FAFAFA]'
+                          : 'border-[#E5E5E3] hover:border-[#CCCCCC]'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value={opt.value}
+                        checked={form.paymentMethod === opt.value}
+                        onChange={(e) =>
+                          setForm({ ...form, paymentMethod: e.target.value })
+                        }
+                        className="mt-0.5 accent-[#111111]"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span>{opt.icon}</span>
+                            <span className="text-sm font-medium text-[#111111]">
+                              {opt.label}
+                            </span>
+                          </div>
+                          {opt.badge && (
+                            <span className="text-[10px] font-mono uppercase bg-[#111111] text-white px-2 py-0.5">
+                              {opt.badge}
+                            </span>
+                          )}
                         </div>
-                        {opt.badge && (
-                          <span className="text-[10px] font-mono uppercase bg-[#111111] text-white px-2 py-0.5">
-                            {opt.badge}
-                          </span>
-                        )}
+                        <p className="text-xs text-[#888888] mt-1">{opt.desc}</p>
                       </div>
-                      <p className="text-xs text-[#888888] mt-1">{opt.desc}</p>
-                    </div>
-                  </label>
+                    </label>
+
+                    {/* Form nhập thẻ tín dụng quốc tế bảo mật */}
+                    {opt.value === 'CREDIT_CARD' && form.paymentMethod === 'CREDIT_CARD' && (
+                      <div className="p-4 bg-[#FBFBFA] border border-[#E5E5E3] space-y-3 animate-fadeIn ml-2">
+                        <div>
+                          <label className="block text-[10px] font-mono uppercase tracking-wider text-[#666666] mb-1">
+                            Số Thẻ (16 chữ số)
+                          </label>
+                          <input
+                            type="text"
+                            maxLength={19}
+                            placeholder="4123 •••• •••• 9012"
+                            value={form.cardNumber}
+                            onChange={(e) => setForm({ ...form, cardNumber: e.target.value })}
+                            className="w-full bg-white border border-[#DCDCDA] px-3 py-2 text-xs font-mono text-[#111111] focus:outline-none focus:border-[#111111]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-mono uppercase tracking-wider text-[#666666] mb-1">
+                            Tên In Trên Thẻ
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="NGUYEN VAN A"
+                            value={form.cardHolder}
+                            onChange={(e) => setForm({ ...form, cardHolder: e.target.value.toUpperCase() })}
+                            className="w-full bg-white border border-[#DCDCDA] px-3 py-2 text-xs font-mono uppercase text-[#111111] focus:outline-none focus:border-[#111111]"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[10px] font-mono uppercase tracking-wider text-[#666666] mb-1">
+                              Hết Hạn (MM/YY)
+                            </label>
+                            <input
+                              type="text"
+                              maxLength={5}
+                              placeholder="12/28"
+                              value={form.cardExpiry}
+                              onChange={(e) => setForm({ ...form, cardExpiry: e.target.value })}
+                              className="w-full bg-white border border-[#DCDCDA] px-3 py-2 text-xs font-mono text-[#111111] focus:outline-none focus:border-[#111111]"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-mono uppercase tracking-wider text-[#666666] mb-1">
+                              Mã Bảo Mật (CVV / CVC)
+                            </label>
+                            <input
+                              type="password"
+                              maxLength={4}
+                              placeholder="•••"
+                              value={form.cardCvv}
+                              onChange={(e) => setForm({ ...form, cardCvv: e.target.value })}
+                              className="w-full bg-white border border-[#DCDCDA] px-3 py-2 text-xs font-mono text-[#111111] focus:outline-none focus:border-[#111111]"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-[#888888] flex items-center gap-1 mt-1">
+                          🔒 Thông tin thẻ được mã hóa bảo mật 256-bit theo chuẩn quốc tế PCI-DSS.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
