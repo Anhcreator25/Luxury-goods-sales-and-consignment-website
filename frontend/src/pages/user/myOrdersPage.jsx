@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
-import { orderServices } from '../../services'
+import { orderServices, offerServices, cartServices } from '../../services'
 import { formatPrice, formatDate } from '../../utils/formatters'
 
 // Order lifecycle status mappings & styling
@@ -156,6 +156,8 @@ function OrderCard({ order, onOpenPaymentModal, onCancelOrder, cancellingId }) {
 export default function MyOrdersPage() {
   const navigate = useNavigate()
   const [orders, setOrders] = useState([])
+  const [sentOffers, setSentOffers] = useState([])
+  const [activeSection, setActiveSection] = useState('orders') // 'orders' | 'offers'
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
@@ -184,7 +186,18 @@ export default function MyOrdersPage() {
       // ignore JSON error
     }
     fetchOrders()
+    fetchSentOffers()
   }, [])
+
+  const fetchSentOffers = async () => {
+    try {
+      const res = await offerServices.getSentOffers()
+      const list = Array.isArray(res.data) ? res.data : (res.data?.data || [])
+      setSentOffers(Array.isArray(list) ? list : [])
+    } catch (err) {
+      console.error('Lỗi lấy danh sách đề xuất giá đã gửi:', err)
+    }
+  }
 
   // Fetch purchase orders from API
   const fetchOrders = async () => {
@@ -269,60 +282,193 @@ export default function MyOrdersPage() {
           </div>
         )}
 
-        {/* Tab Filter Bar */}
-        <div className="flex border-b border-[#E5E5E3] mb-6 overflow-x-auto">
-          {TABS.map(tab => {
-            const count = tab.key === 'all'
-              ? orders.length
-              : orders.filter(o => o.status === tab.key || o.order_status === tab.key).length
-
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex-shrink-0 px-5 py-3 text-xs font-mono uppercase tracking-wider border-b-2 transition-colors duration-150 ${
-                  activeTab === tab.key
-                    ? 'border-[#111111] text-[#111111]'
-                    : 'border-transparent text-[#888888] hover:text-[#444444]'
-                }`}
-              >
-                {tab.label}
-                <span className="ml-1.5 text-[9px]">({count})</span>
-              </button>
-            )
-          })}
+        {/* Main Section Switcher: Đơn Hàng vs Đề Xuất Giá */}
+        <div className="flex border-b border-[#E5E5E3] mb-6">
+          <button
+            onClick={() => setActiveSection('orders')}
+            className={`py-3 px-6 text-xs font-mono uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+              activeSection === 'orders'
+                ? 'border-[#111111] text-[#111111] font-bold'
+                : 'border-transparent text-[#777777] hover:text-[#111111]'
+            }`}
+          >
+            Đơn Mua Của Tôi ({orders.length})
+          </button>
+          <button
+            onClick={() => setActiveSection('offers')}
+            className={`py-3 px-6 text-xs font-mono uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+              activeSection === 'offers'
+                ? 'border-[#111111] text-[#111111] font-bold'
+                : 'border-transparent text-[#777777] hover:text-[#111111]'
+            }`}
+          >
+            <span>Đề Xuất Giá Đã Gửi</span>
+            {sentOffers.length > 0 && (
+              <span className="bg-[#111111] text-white text-[9px] px-2 py-0.5 rounded-full">
+                {sentOffers.length}
+              </span>
+            )}
+          </button>
         </div>
 
-        {/* Orders List */}
-        {loading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map(i => <SkeletonCard key={i} />)}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="border border-dashed border-[#E5E5E3] bg-white py-16 flex flex-col items-center justify-center text-center">
-            <div className="w-12 h-12 bg-[#F0F0EE] border border-[#E5E5E3] flex items-center justify-center mb-4">
-              <span className="text-xl">📦</span>
+        {activeSection === 'orders' ? (
+          <>
+            {/* Tab Filter Bar */}
+            <div className="flex border-b border-[#E5E5E3] mb-6 overflow-x-auto">
+              {TABS.map(tab => {
+                const count = tab.key === 'all'
+                  ? orders.length
+                  : orders.filter(o => o.status === tab.key || o.order_status === tab.key).length
+
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`flex-shrink-0 px-5 py-3 text-xs font-mono uppercase tracking-wider border-b-2 transition-colors duration-150 ${
+                      activeTab === tab.key
+                        ? 'border-[#111111] text-[#111111]'
+                        : 'border-transparent text-[#888888] hover:text-[#444444]'
+                    }`}
+                  >
+                    {tab.label}
+                    <span className="ml-1.5 text-[9px]">({count})</span>
+                  </button>
+                )
+              })}
             </div>
-            <p className="text-sm font-mono uppercase tracking-wider text-[#444444] mb-1">Chưa Có Đơn Hàng Nào</p>
-            <p className="text-xs text-[#888888] mb-6">Bắt đầu mua sắm ngay để thấy đơn hàng tại đây.</p>
-            <Link
-              to="/shop"
-              className="bg-[#111111] text-white text-xs font-mono uppercase tracking-wider px-6 py-2.5 hover:bg-[#2A2A2A] transition-colors duration-150"
-            >
-              Khám Phá Cửa Hàng
-            </Link>
-          </div>
+
+            {/* Orders List */}
+            {loading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map(i => <SkeletonCard key={i} />)}
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="border border-dashed border-[#E5E5E3] bg-white py-16 flex flex-col items-center justify-center text-center">
+                <div className="w-12 h-12 bg-[#F0F0EE] border border-[#E5E5E3] flex items-center justify-center mb-4">
+                  <span className="text-xl">📦</span>
+                </div>
+                <p className="text-sm font-mono uppercase tracking-wider text-[#444444] mb-1">Chưa Có Đơn Hàng Nào</p>
+                <p className="text-xs text-[#888888] mb-6">Bắt đầu mua sắm ngay để thấy đơn hàng tại đây.</p>
+                <Link
+                  to="/shop"
+                  className="bg-[#111111] text-white text-xs font-mono uppercase tracking-wider px-6 py-2.5 hover:bg-[#2A2A2A] transition-colors duration-150"
+                >
+                  Khám Phá Cửa Hàng
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filtered.map((order, idx) => (
+                  <OrderCard
+                    key={order.id || order._id || idx}
+                    order={order}
+                    onOpenPaymentModal={(ord) => setPayOrder(ord)}
+                    onCancelOrder={handleCancelOrder}
+                    cancellingId={cancellingId}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         ) : (
+          /* Sent Offers Section */
           <div className="space-y-4">
-            {filtered.map((order, idx) => (
-              <OrderCard
-                key={order.id || order._id || idx}
-                order={order}
-                onOpenPaymentModal={(ord) => setPayOrder(ord)}
-                onCancelOrder={handleCancelOrder}
-                cancellingId={cancellingId}
-              />
-            ))}
+            {sentOffers.length === 0 ? (
+              <div className="border border-dashed border-[#E5E5E3] bg-white py-16 flex flex-col items-center justify-center text-center">
+                <div className="w-12 h-12 bg-[#F0F0EE] border border-[#E5E5E3] flex items-center justify-center mb-4">
+                  <span className="text-xl">🏷️</span>
+                </div>
+                <p className="text-sm font-mono uppercase tracking-wider text-[#444444] mb-1">Bạn Chưa Đề Xuất Giá Món Đồ Nào</p>
+                <p className="text-xs text-[#888888] mb-6">Khi xem sản phẩm, bạn có thể bấm "Thương Lượng / Đề Xuất Giá" để trả giá với người bán.</p>
+                <Link
+                  to="/shop"
+                  className="bg-[#111111] text-white text-xs font-mono uppercase tracking-wider px-6 py-2.5 hover:bg-[#2A2A2A] transition-colors duration-150"
+                >
+                  Xem Sản Phẩm Ngay
+                </Link>
+              </div>
+            ) : (
+              sentOffers.map((offer) => (
+                <div key={offer.id} className="border border-[#E5E5E3] bg-white p-5 space-y-4 shadow-sm font-sans">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F0F0EE] pb-3">
+                    <div className="flex items-center gap-3">
+                      {offer.primary_image && (
+                        <img src={offer.primary_image} alt="" className="w-14 h-14 object-cover border border-[#E5E5E3]" />
+                      )}
+                      <div>
+                        <h4 className="text-sm font-serif font-medium text-[#111111]">{offer.listing_title}</h4>
+                        <div className="text-xs font-mono text-[#777777] mt-0.5">
+                          Người bán: <span className="text-[#111111] font-medium">{offer.seller_name || 'Nhà Sưu Tầm Aura'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className={`text-[10px] font-mono uppercase px-3 py-1 border font-medium ${
+                        offer.status === 'accepted' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
+                        offer.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
+                        'bg-amber-50 text-amber-700 border-amber-200'
+                      }`}>
+                        {offer.status === 'accepted' ? '✓ Người Bán Đã Đồng Ý' : offer.status === 'rejected' ? '✕ Người Bán Đã Từ Chối' : '⏳ Đang Chờ Phản Hồi'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 font-mono text-xs">
+                    <div>
+                      <span className="text-[#888888] text-[10px] uppercase block">Giá Niêm Yết</span>
+                      <span className="text-[#666666] line-through">{formatPrice(offer.listing_price)}</span>
+                    </div>
+                    <div>
+                      <span className="text-[#888888] text-[10px] uppercase block">Giá Bạn Đã Trả</span>
+                      <span className="text-sm font-bold text-[#111111]">{formatPrice(offer.offered_price)}</span>
+                    </div>
+                    <div className="col-span-2 sm:col-span-1">
+                      <span className="text-[#888888] text-[10px] uppercase block">Bạn Tiết Kiệm</span>
+                      <span className="text-xs font-semibold text-[#1E7E34]">
+                        -{formatPrice(Number(offer.listing_price) - Number(offer.offered_price))}
+                      </span>
+                    </div>
+                  </div>
+
+                  {offer.buyer_note && (
+                    <div className="bg-[#FAF9F7] p-2.5 border border-[#EFECE6] text-xs text-[#666666] font-mono">
+                      <span className="font-semibold text-[#111111]">Lời nhắn của bạn: </span>
+                      "{offer.buyer_note}"
+                    </div>
+                  )}
+
+                  {/* Khi người bán chấp nhận (Accepted) -> Hiện nút Mua Ngay giá ưu đãi & Đồng hồ 24h */}
+                  {offer.status === 'accepted' && (
+                    <div className="pt-3 border-t border-[#F0F0EE] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#F2F8F4] p-3 border border-[#D4EDDA]">
+                      <div className="text-xs font-mono text-[#155724] space-y-1">
+                        <div>
+                          🎉 <strong>Tuyệt vời!</strong> Người bán đã đồng ý bán cho bạn với giá ưu đãi{' '}
+                          <strong>{formatPrice(offer.offered_price)}</strong>.
+                        </div>
+                        <div className="text-[11px] text-[#28A745] flex items-center gap-1.5">
+                          <span>⏱️</span>
+                          <span>Ưu đãi áp dụng trong vòng <strong>24 Giờ</strong> kể từ khi người bán chấp thuận.</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          try {
+                            await cartServices.addToCart(offer.listing_id, 1)
+                          } catch (e) {
+                            // Already in cart or added
+                          }
+                          navigate('/cart')
+                        }}
+                        className="px-5 py-2.5 bg-[#111111] text-white hover:bg-[#2B2B2B] text-xs font-mono uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer shadow-sm"
+                      >
+                        Thanh Toán Giá Ưu Đãi →
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>

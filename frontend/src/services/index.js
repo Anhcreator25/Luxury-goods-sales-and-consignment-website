@@ -3,4 +3,5 @@ export * from "./authServices";
 export * from "./cartServices";
 export * from "./orderServices";
 export * from "./listingServices";
+export * from "./offerServices";
 

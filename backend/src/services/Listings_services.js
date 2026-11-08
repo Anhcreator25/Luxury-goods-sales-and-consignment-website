@@ -239,6 +239,31 @@ export const getListingByIdServices = async(id, requester = null) => {
     
     const listing = row[0];
 
+    // Check if requester has an accepted offer for this product (valid within 24h)
+    if (requester && requester.id) {
+        try {
+            const [acceptedOffer] = await pool.query(
+                `SELECT id, offered_price, created_at 
+                 FROM offers 
+                 WHERE listing_id = ? 
+                   AND buyer_id = ? 
+                   AND status = 'accepted'
+                   AND created_at >= NOW() - INTERVAL 24 HOUR
+                 ORDER BY id DESC LIMIT 1`,
+                [id, requester.id]
+            );
+            if (acceptedOffer.length > 0) {
+                listing.has_accepted_offer = true;
+                listing.accepted_offer_price = acceptedOffer[0].offered_price;
+                listing.accepted_offer_created_at = acceptedOffer[0].created_at;
+                listing.original_price = listing.selling_price;
+                listing.selling_price = acceptedOffer[0].offered_price;
+            }
+        } catch (e) {
+            // ignore
+        }
+    }
+
     // Security check: if listing is not active, only its seller or an admin can view it
     if (listing.status !== 'active') {
         const isOwner = requester && Number(requester.id) === Number(listing.seller_id);
@@ -263,6 +288,27 @@ export const getListingByIdServices = async(id, requester = null) => {
 
     const [images] = await pool.query(`SELECT id, image_url, is_primary FROM listing_images WHERE listing_id = ?`, [id]);
     listing.images = images;
+
+    // Attach Seller Reputation Stats (Completed orders count & joined year)
+    try {
+        const [salesStats] = await pool.query(
+            `SELECT COUNT(DISTINCT o.id) AS completed_sales 
+             FROM orders o
+             JOIN order_items oi ON o.id = oi.order_id
+             JOIN listings l ON oi.listing_id = l.id
+             WHERE l.seller_id = ? AND (o.order_status = 'paid' OR o.payment_status = 'paid' OR o.order_status = 'completed')`,
+            [listing.seller_id]
+        );
+        listing.seller_completed_sales = salesStats[0]?.completed_sales || 0;
+
+        const [sellerUser] = await pool.query(
+            `SELECT created_at FROM users WHERE id = ?`,
+            [listing.seller_id]
+        );
+        listing.seller_joined = sellerUser[0]?.created_at || null;
+    } catch (e) {
+        listing.seller_completed_sales = 0;
+    }
          
     return listing;
 }

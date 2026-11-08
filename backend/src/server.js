@@ -8,6 +8,7 @@ import userRoutes from './routes/userRoutes.js'
 import listingRoutes from'./routes/listingRoutes.js'
 import cartRoutes from './routes/cartRoutes.js'
 import orderRoutes from './routes/orderRoutes.js'
+import offerRoutes from './routes/offerRoutes.js'
 
 const app =express();
 
@@ -18,6 +19,7 @@ app.use('/api/users',userRoutes);
 app.use('/api/listings',listingRoutes);
 app.use('/api/cart_items',cartRoutes)
 app.use('/api/orders',orderRoutes)
+app.use('/api/offers',offerRoutes)
 
 
 const PORT = process.env.PORT ;

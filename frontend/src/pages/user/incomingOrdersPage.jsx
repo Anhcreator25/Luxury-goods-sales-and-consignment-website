@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
-import { orderServices } from '../../services'
+import { orderServices, offerServices } from '../../services'
 
 const formatPrice = (p) => Number(p).toLocaleString('vi-VN') + ' ₫'
 const formatDate = (d) => new Date(d).toLocaleDateString('vi-VN')
@@ -132,29 +132,57 @@ function IncomingOrderCard({ order, onConfirm }) {
 
 export default function IncomingOrdersPage() {
   const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState('orders') // 'orders' | 'offers'
   const [orders, setOrders] = useState([])
+  const [offers, setOffers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [toast, setToast] = useState('')
 
   useEffect(() => {
     const token = localStorage.getItem('token')
-    if (!token) { navigate('/login'); return }
-    fetchOrders()
-  }, [])
+    if (!token) {
+      navigate('/login')
+      return
+    }
 
-  const fetchOrders = async () => {
-    setLoading(true)
-    setError('')
+    const fetchData = async () => {
+      setLoading(true)
+      setError('')
+      try {
+        const [ordersRes, offersRes] = await Promise.allSettled([
+          orderServices.getOrders(),
+          offerServices.getReceivedOffers(),
+        ])
+
+        if (ordersRes.status === 'fulfilled') {
+          const resVal = ordersRes.value
+          const list = Array.isArray(resVal) ? resVal : (resVal?.data?.orders || resVal?.orders || resVal?.data || [])
+          setOrders(Array.isArray(list) ? list : [])
+        }
+
+        if (offersRes.status === 'fulfilled') {
+          const resVal = offersRes.value
+          const oList = Array.isArray(resVal) ? resVal : (resVal?.data?.data || resVal?.data || [])
+          setOffers(Array.isArray(oList) ? oList : [])
+        }
+      } catch (err) {
+        console.error("Error loading incoming data:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [navigate])
+
+  const handleRespondOffer = async (offerId, action) => {
     try {
-      const res = await orderServices.getOrders()
-      const data = Array.isArray(res.data) ? res.data : (res.data?.orders || res.data?.data || [])
-      setOrders(Array.isArray(data) ? data : [])
-    } catch {
-      setError('Không thể tải dữ liệu đơn hàng từ máy chủ.')
-      setOrders([])
-    } finally {
-      setLoading(false)
+      await offerServices.respondOffer(offerId, action)
+      setToast(action === 'accepted' ? 'Đã chấp nhận mức giá đề xuất!' : 'Đã từ chối mức giá đề xuất.')
+      setOffers(prev => prev.map(o => o.id === offerId ? { ...o, status: action } : o))
+    } catch (err) {
+      setToast(err?.response?.data?.message || 'Có lỗi xảy ra khi xử lý đề xuất.')
     }
   }
 
@@ -196,44 +224,159 @@ export default function IncomingOrdersPage() {
           </div>
         )}
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="border border-[#E5E5E3] bg-white p-5 text-center">
-            <p className="text-2xl font-bold text-[#111111]">{loading ? '—' : totalOrders}</p>
-            <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888] mt-1">Tổng Đơn</p>
-          </div>
-          <div className="border border-[#E5E5E3] bg-white p-5 text-center">
-            <p className="text-2xl font-bold text-amber-600">{loading ? '—' : pendingOrders}</p>
-            <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888] mt-1">Đang Chờ</p>
-          </div>
-          <div className="border border-[#E5E5E3] bg-white p-5 text-center">
-            <p className="text-2xl font-bold text-emerald-600">{loading ? '—' : completedOrders}</p>
-            <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888] mt-1">Hoàn Thành</p>
-          </div>
+        {/* Navigation Tabs */}
+        <div className="flex border-b border-[#E5E5E3] mb-6">
+          <button
+            onClick={() => setActiveTab('orders')}
+            className={`py-3 px-6 text-xs font-mono uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+              activeTab === 'orders'
+                ? 'border-[#111111] text-[#111111] font-bold'
+                : 'border-transparent text-[#777777] hover:text-[#111111]'
+            }`}
+          >
+            Đơn Hàng ({orders.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('offers')}
+            className={`py-3 px-6 text-xs font-mono uppercase tracking-wider border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'offers'
+                ? 'border-[#111111] text-[#111111] font-bold'
+                : 'border-transparent text-[#777777] hover:text-[#111111]'
+            }`}
+          >
+            <span>Đề Xuất Giá (Offers)</span>
+            {offers.filter(o => o.status === 'pending').length > 0 && (
+              <span className="bg-[#111111] text-white text-[9px] px-2 py-0.5 rounded-full">
+                {offers.filter(o => o.status === 'pending').length} mới
+              </span>
+            )}
+          </button>
         </div>
 
-        {/* Orders List */}
-        {loading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map(i => <SkeletonCard key={i} />)}
-          </div>
-        ) : orders.length === 0 ? (
-          <div className="border border-dashed border-[#E5E5E3] bg-white py-16 flex flex-col items-center text-center">
-            <div className="w-12 h-12 bg-[#F0F0EE] border border-[#E5E5E3] flex items-center justify-center mb-4">
-              <span className="text-xl">📬</span>
+        {activeTab === 'orders' ? (
+          <>
+            {/* Stats Row */}
+            <div className="grid grid-cols-3 gap-4 mb-8">
+              <div className="border border-[#E5E5E3] bg-white p-5 text-center">
+                <p className="text-2xl font-bold text-[#111111]">{loading ? '—' : totalOrders}</p>
+                <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888] mt-1">Tổng Đơn</p>
+              </div>
+              <div className="border border-[#E5E5E3] bg-white p-5 text-center">
+                <p className="text-2xl font-bold text-amber-600">{loading ? '—' : pendingOrders}</p>
+                <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888] mt-1">Đang Chờ</p>
+              </div>
+              <div className="border border-[#E5E5E3] bg-white p-5 text-center">
+                <p className="text-2xl font-bold text-emerald-600">{loading ? '—' : completedOrders}</p>
+                <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888] mt-1">Hoàn Thành</p>
+              </div>
             </div>
-            <p className="text-sm font-mono uppercase tracking-wider text-[#444444] mb-1">Chưa Có Đơn Hàng Nào</p>
-            <p className="text-xs text-[#888888]">Khi khách hàng mua sản phẩm của bạn, đơn hàng sẽ hiển thị tại đây.</p>
-          </div>
+
+            {/* Orders List */}
+            {loading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map(i => <SkeletonCard key={i} />)}
+              </div>
+            ) : orders.length === 0 ? (
+              <div className="border border-dashed border-[#E5E5E3] bg-white py-16 flex flex-col items-center text-center">
+                <div className="w-12 h-12 bg-[#F0F0EE] border border-[#E5E5E3] flex items-center justify-center mb-4">
+                  <span className="text-xl">📬</span>
+                </div>
+                <p className="text-sm font-mono uppercase tracking-wider text-[#444444] mb-1">Chưa Có Đơn Hàng Nào</p>
+                <p className="text-xs text-[#888888]">Khi khách hàng mua sản phẩm của bạn, đơn hàng sẽ hiển thị tại đây.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {orders.map((order, idx) => (
+                  <IncomingOrderCard
+                    key={order.id || order._id || idx}
+                    order={order}
+                    onConfirm={handleConfirm}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         ) : (
+          /* Offers List Tab */
           <div className="space-y-4">
-            {orders.map((order, idx) => (
-              <IncomingOrderCard
-                key={order.id || order._id || idx}
-                order={order}
-                onConfirm={handleConfirm}
-              />
-            ))}
+            {offers.length === 0 ? (
+              <div className="border border-dashed border-[#E5E5E3] bg-white py-16 flex flex-col items-center text-center">
+                <div className="w-12 h-12 bg-[#F0F0EE] border border-[#E5E5E3] flex items-center justify-center mb-4">
+                  <span className="text-xl">🏷️</span>
+                </div>
+                <p className="text-sm font-mono uppercase tracking-wider text-[#444444] mb-1">Chưa Có Lời Trả Giá Nào</p>
+                <p className="text-xs text-[#888888]">Khi khách hàng đề xuất mức giá mong muốn cho sản phẩm, bạn sẽ duyệt tại đây.</p>
+              </div>
+            ) : (
+              offers.map((offer) => (
+                <div key={offer.id} className="border border-[#E5E5E3] bg-white p-5 space-y-4 shadow-sm font-sans">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F0F0EE] pb-3">
+                    <div className="flex items-center gap-3">
+                      {offer.primary_image && (
+                        <img src={offer.primary_image} alt="" className="w-12 h-12 object-cover border border-[#E5E5E3]" />
+                      )}
+                      <div>
+                        <h4 className="text-sm font-serif font-medium text-[#111111]">{offer.listing_title}</h4>
+                        <div className="text-xs font-mono text-[#777777] mt-0.5">
+                          Khách mua: <span className="text-[#111111] font-semibold">{offer.buyer_name || offer.buyer_email}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-mono uppercase px-2.5 py-1 border ${
+                        offer.status === 'accepted' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                        offer.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
+                        'bg-amber-50 text-amber-700 border-amber-200'
+                      }`}>
+                        {offer.status === 'accepted' ? 'Đã Đồng Ý' : offer.status === 'rejected' ? 'Đã Từ Chối' : 'Chờ Phản Hồi'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 font-mono text-xs">
+                    <div>
+                      <span className="text-[#888888] text-[10px] uppercase block">Giá Niêm Yết</span>
+                      <span className="text-[#555555] line-through">{formatPrice(offer.listing_price)}</span>
+                    </div>
+                    <div>
+                      <span className="text-[#888888] text-[10px] uppercase block">Giá Khách Đề Xuất</span>
+                      <span className="text-sm font-bold text-[#111111]">{formatPrice(offer.offered_price)}</span>
+                    </div>
+                    <div className="col-span-2 sm:col-span-1">
+                      <span className="text-[#888888] text-[10px] uppercase block">Tiết Kiệm Cho Khách</span>
+                      <span className="text-xs font-semibold text-[#1E7E34]">
+                        -{formatPrice(Number(offer.listing_price) - Number(offer.offered_price))}
+                      </span>
+                    </div>
+                  </div>
+
+                  {offer.buyer_note && (
+                    <div className="bg-[#FAF9F7] p-3 border border-[#EFECE6] text-xs text-[#555555] font-mono">
+                      <span className="font-semibold text-[#111111]">Lời nhắn từ khách: </span>
+                      "{offer.buyer_note}"
+                    </div>
+                  )}
+
+                  {offer.status === 'pending' && (
+                    <div className="flex justify-end gap-3 pt-2 border-t border-[#F0F0EE]">
+                      <button
+                        onClick={() => handleRespondOffer(offer.id, 'rejected')}
+                        className="px-4 py-2 text-xs font-mono uppercase tracking-wider text-[#9A2222] border border-[#D93838]/30 hover:bg-[#FDF2F2] cursor-pointer"
+                      >
+                        Từ Chối
+                      </button>
+                      <button
+                        onClick={() => handleRespondOffer(offer.id, 'accepted')}
+                        className="px-5 py-2 text-xs font-mono uppercase tracking-wider bg-[#111111] text-white hover:bg-[#2B2B2B] cursor-pointer"
+                      >
+                        Đồng Ý Bán Giá Này ✓
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>

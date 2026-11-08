@@ -4,7 +4,26 @@ import pool from "../config/db.js";
 export const getCartServices = async (userId) => {
     const query = `
         SELECT ci.id AS cart_item_id, ci.quantity,
-               l.id AS listing_id, l.title, l.selling_price, l.condition_grade,
+               l.id AS listing_id, l.title, 
+               COALESCE(
+                   (SELECT o.offered_price 
+                    FROM offers o 
+                    WHERE o.listing_id = l.id 
+                      AND o.buyer_id = ? 
+                      AND o.status = 'accepted'
+                      AND o.created_at >= NOW() - INTERVAL 24 HOUR
+                    ORDER BY o.id DESC LIMIT 1),
+                   l.selling_price
+               ) AS selling_price,
+               l.selling_price AS original_listing_price,
+               (SELECT o.id 
+                FROM offers o 
+                WHERE o.listing_id = l.id 
+                  AND o.buyer_id = ? 
+                  AND o.status = 'accepted'
+                  AND o.created_at >= NOW() - INTERVAL 24 HOUR
+                ORDER BY o.id DESC LIMIT 1) AS accepted_offer_id,
+               l.condition_grade,
                li.image_url AS primary_image,
                u.name AS seller_name
         FROM cart_items ci
@@ -14,7 +33,7 @@ export const getCartServices = async (userId) => {
         WHERE ci.user_id = ? AND l.status = 'active'
     `;
     
-    const [items] = await pool.query(query, [userId]);
+    const [items] = await pool.query(query, [userId, userId, userId]);
     return items;            
 }
 

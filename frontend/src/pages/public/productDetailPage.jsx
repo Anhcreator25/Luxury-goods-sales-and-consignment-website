@@ -4,6 +4,8 @@ import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import { formatPrice, CONDITION_MAP } from '../../utils/formatters'
 import { listingServices, cartServices } from '../../services'
+import MakeOfferModal from '../../components/MakeOfferModal'
+import SellerReputationCard from '../../components/SellerReputationCard'
 
 export default function ProductDetailPage() {
   const { id } = useParams()
@@ -16,6 +18,7 @@ export default function ProductDetailPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [cartLoading, setCartLoading] = useState(false)
+  const [isOfferModalOpen, setIsOfferModalOpen] = useState(false)
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -222,7 +225,9 @@ export default function ProductDetailPage() {
 
             {/* Price Box */}
             <div className="space-y-1">
-              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#888888] block">Giá Ký Gửi Niêm Yết</span>
+              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#888888] block">
+                {product?.has_accepted_offer ? 'Giá Thỏa Thuận Ưu Đãi Của Bạn' : 'Giá Ký Gửi Niêm Yết'}
+              </span>
               <div className="flex items-baseline gap-4">
                 <span className="text-3xl sm:text-4xl font-mono font-medium text-[#111111]">
                   {formatPrice(product?.selling_price ?? product?.price ?? 0)}
@@ -233,6 +238,11 @@ export default function ProductDetailPage() {
                   </span>
                 )}
               </div>
+              {product?.has_accepted_offer && (
+                <div className="inline-block bg-[#F2F8F4] text-[#1E7E34] border border-[#C3E6CB] px-2.5 py-1 text-[11px] font-mono mt-1">
+                  ✓ Người bán đã chấp thuận mức giá đề xuất này cho bạn
+                </div>
+              )}
             </div>
 
             {/* Action Buttons: Add to Cart & Buy Now */}
@@ -265,6 +275,22 @@ export default function ProductDetailPage() {
                 </button>
               </div>
 
+              {/* Make an Offer Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (!token) {
+                    navigate('/login')
+                    return
+                  }
+                  setIsOfferModalOpen(true)
+                }}
+                className="w-full py-3.5 bg-[#FAF9F7] hover:bg-[#F3EFE6] border border-[#111111] text-[#111111] text-xs font-mono uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>🏷️</span>
+                <span>Thương Lượng / Đề Xuất Giá (Make an Offer)</span>
+              </button>
+
               {!token && (
                 <p className="text-[11px] text-[#888888] font-mono text-center pt-1">
                   Đã có tài khoản?{' '}
@@ -275,6 +301,13 @@ export default function ProductDetailPage() {
                 </p>
               )}
             </div>
+
+            {/* ── Seller Reputation & Trust Dossier ── */}
+            <SellerReputationCard
+              sellerName={product?.seller_name}
+              completedSales={product?.seller_completed_sales}
+              joinedDate={product?.seller_joined}
+            />
 
             {/* ── 3 Trụ Cột Bảo Chứng (Trust Pillars) ── */}
             <div className="bg-[#F8F8F7] border border-[#EAEAE8] p-5 space-y-3.5">
@@ -337,6 +370,16 @@ export default function ProductDetailPage() {
       </main>
 
       <Footer />
+
+      {/* ── Modal Đề Xuất Giá (Make an Offer) ── */}
+      <MakeOfferModal
+        isOpen={isOfferModalOpen}
+        onClose={() => setIsOfferModalOpen(false)}
+        product={product}
+        onSuccess={() => {
+          setSuccess('Đã gửi đề xuất giá thành công! Người bán sẽ phản hồi sớm nhất.')
+        }}
+      />
     </div>
   )
 }

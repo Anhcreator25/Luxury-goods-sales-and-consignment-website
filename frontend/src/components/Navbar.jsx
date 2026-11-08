@@ -317,6 +317,13 @@ export default function Navbar({ onSearch, onCategorySelect }) {
                         >
                           Ký Gửi Của Tôi
                         </button>
+                        <button
+                          onClick={() => { setIsUserMenuOpen(false); navigate("/incoming-orders"); }}
+                          className="w-full text-left px-5 py-2 text-xs font-mono uppercase tracking-wider text-[#111111] font-semibold hover:bg-[#F8F8F7] transition flex items-center justify-between"
+                        >
+                          <span>Đơn Bán &amp; Trả Giá</span>
+                          <span className="text-[9px] bg-[#FAF9F7] text-[#111111] border border-[#E5E5E3] px-1.5 py-0.5">SELLER</span>
+                        </button>
                       </>
                     )}
 

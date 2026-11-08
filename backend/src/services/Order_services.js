@@ -16,12 +16,23 @@ export const createOrderServices = async (userId, orderData,cartItemId)=> {
        try {
             await connection.beginTransaction();
 
-            //get infor product
+            //get infor product (including accepted offer price if within 24h)
             const [cartItems] = await connection.query(
-                 `SELECT ci.listing_id, ci.quantity, l.selling_price, l.status, l.title 
+                 `SELECT ci.listing_id, ci.quantity, 
+                         COALESCE(
+                             (SELECT o.offered_price 
+                              FROM offers o 
+                              WHERE o.listing_id = l.id 
+                                AND o.buyer_id = ? 
+                                AND o.status = 'accepted'
+                                AND o.created_at >= NOW() - INTERVAL 24 HOUR
+                              ORDER BY o.id DESC LIMIT 1),
+                             l.selling_price
+                         ) AS selling_price,
+                         l.status, l.title 
                   FROM cart_items ci 
                   JOIN listings l ON ci.listing_id = l.id
-                  WHERE ci.user_id =? AND ci.id IN (?)`,[userId,cartItemId]);
+                  WHERE ci.user_id =? AND ci.id IN (?)`,[userId, userId, cartItemId]);
             
             //Check if the shopping cart contains any items
             if(cartItems.length===0){
