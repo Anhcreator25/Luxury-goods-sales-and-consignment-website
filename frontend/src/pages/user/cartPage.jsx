@@ -86,6 +86,7 @@ export default function CartPage() {
 
   const [step, setStep] = useState('cart') // 'cart' | 'checkout'
   const [cartItems, setCartItems] = useState([])
+  const [selectedIds, setSelectedIds] = useState([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState(null)
   const [error, setError] = useState('')
@@ -129,7 +130,10 @@ export default function CartPage() {
     setError('')
     try {
       const res = await cartServices.getCart()
-      setCartItems(res.data?.data ?? res.data ?? [])
+      const items = res.data?.data ?? res.data ?? []
+      setCartItems(items)
+      // Mặc định chọn tất cả các sản phẩm trong giỏ
+      setSelectedIds(items.map((i) => i.cart_item_id || i.id))
     } catch (err) {
       setError('Không thể tải giỏ hàng. Vui lòng thử lại.')
     } finally {
@@ -144,6 +148,7 @@ export default function CartPage() {
     try {
       await cartServices.removeCartItem(id)
       setCartItems((prev) => prev.filter((item) => (item.cart_item_id || item.id) !== id))
+      setSelectedIds((prev) => prev.filter((itemId) => itemId !== id))
     } catch (err) {
       setError('Không thể xóa sản phẩm. Vui lòng thử lại.')
     } finally {
@@ -151,8 +156,40 @@ export default function CartPage() {
     }
   }
 
+  // Danh sách các món được chọn thanh toán
+  const activeCheckoutItems = cartItems.filter((i) => selectedIds.includes(i.cart_item_id || i.id))
+
+  // Toggle chọn một sản phẩm
+  const toggleSelectItem = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]
+    )
+  }
+
+  // Chọn tất cả hoặc bỏ chọn tất cả
+  const toggleSelectAll = () => {
+    if (selectedIds.length === cartItems.length) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(cartItems.map((i) => i.cart_item_id || i.id))
+    }
+  }
+
+  // Mua riêng 1 món duy nhất
+  const handleCheckoutSingle = (item) => {
+    const id = item.cart_item_id || item.id
+    setSelectedIds([id])
+    setError('')
+    setStep('checkout')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   // ── Submit order ───────────────────────────────────────────────────────────
   const handlePlaceOrder = async () => {
+    if (activeCheckoutItems.length === 0) {
+      setError('Vui lòng chọn ít nhất một sản phẩm để thanh toán.')
+      return
+    }
     if (!form.address.trim()) {
       setError('Vui lòng nhập địa chỉ giao hàng.')
       return
@@ -170,7 +207,7 @@ export default function CartPage() {
         shipping_address: form.address.trim(),
         phone_number: form.phone.trim(),
         payment_method: form.paymentMethod,
-        cartItemId: cartItems.map((i) => i.cart_item_id || i.id),
+        cartItemId: activeCheckoutItems.map((i) => i.cart_item_id || i.id),
       }
       const res = await orderServices.createOrder(payload)
       const data = res.data?.data ?? res.data ?? {}
@@ -661,6 +698,26 @@ export default function CartPage() {
               <div className="lg:flex lg:gap-8 items-start">
                 {/* LEFT — Cart Items */}
                 <div className="flex-1 space-y-3 mb-8 lg:mb-0">
+                  {/* Select All Bar */}
+                  <div className="flex items-center justify-between border border-[#E5E5E3] bg-white px-4 py-3 text-xs font-mono">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={cartItems.length > 0 && selectedIds.length === cartItems.length}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 accent-[#111111] cursor-pointer"
+                      />
+                      <span className="uppercase tracking-wider text-[#111111] font-medium">
+                        Chọn tất cả ({selectedIds.length}/{cartItems.length})
+                      </span>
+                    </label>
+                    {selectedIds.length > 0 && selectedIds.length < cartItems.length && (
+                      <span className="text-[#888888] text-[11px]">
+                        Đang chọn {selectedIds.length} món để thanh toán
+                      </span>
+                    )}
+                  </div>
+
                   {cartItems.map((item) => {
                     const itemId = item.cart_item_id || item.id
                     const listing = item.listing ?? item
@@ -669,14 +726,28 @@ export default function CartPage() {
                     const brand = item.brand_name || listing?.brand_name || listing?.brand || item.brand || ''
                     const condition = item.condition_grade || listing?.condition_grade || item.condition || ''
                     const title = item.title || listing?.title || 'Sản phẩm xa xỉ'
+                    const isSelected = selectedIds.includes(itemId)
 
                     return (
                       <div
                         key={itemId}
-                        className="flex gap-4 border border-[#E5E5E3] bg-white p-4 hover:border-[#CCCCCC] transition-colors"
+                        className={`flex gap-3 sm:gap-4 border p-4 transition-colors bg-white ${
+                          isSelected ? 'border-[#111111]' : 'border-[#E5E5E3] hover:border-[#CCCCCC]'
+                        }`}
                       >
+                        {/* Checkbox */}
+                        <div className="flex items-center pt-2 sm:pt-0">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelectItem(itemId)}
+                            className="w-4 h-4 accent-[#111111] cursor-pointer"
+                            title="Chọn sản phẩm này để thanh toán"
+                          />
+                        </div>
+
                         {/* Thumbnail */}
-                        <div className="w-24 h-24 flex-shrink-0 bg-[#F5F5F4] overflow-hidden">
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 bg-[#F5F5F4] overflow-hidden">
                           {thumb ? (
                             <img
                               src={thumb}
@@ -718,7 +789,57 @@ export default function CartPage() {
                           <p className="mt-2 text-sm font-mono text-[#111111]">
                             {formatPrice(price)}
                           </p>
-                          <p className="text-xs text-[#888888] mt-0.5">Số lượng: {item.quantity || 1}</p>
+
+                          {/* Offer Negotiation Status Badge in Cart */}
+                          {item.latest_offer_status === 'pending' && (
+                            <div className="mt-2 p-2 bg-[#FFFDF5] border border-[#FBEEC1] text-xs font-mono space-y-0.5">
+                              <p className="text-amber-800 font-semibold flex items-center gap-1">
+                                <span>⏳</span>
+                                <span>Đang chờ duyệt giá: {formatPrice(item.latest_offered_price || 0)}</span>
+                              </p>
+                              <p className="text-[10px] text-amber-700">
+                                Người bán đang xem xét mức giá bạn đề xuất.
+                              </p>
+                            </div>
+                          )}
+
+                          {item.latest_offer_status === 'accepted' && (
+                            <div className="mt-2 p-2 bg-[#F2F8F4] border border-[#C3E6CB] text-xs font-mono space-y-0.5">
+                              <p className="text-emerald-800 font-semibold flex items-center gap-1">
+                                <span>🎉</span>
+                                <span>Giá ưu đãi đã duyệt: {formatPrice(price)}</span>
+                              </p>
+                              <p className="text-[10px] text-emerald-700">
+                                Tiết kiệm {formatPrice(Number(item.original_listing_price || price) - Number(price))} (áp dụng trong 24h).
+                              </p>
+                            </div>
+                          )}
+
+                          {item.latest_offer_status === 'rejected' && (
+                            <div className="mt-2 p-2 bg-[#FDF2F2] border border-[#F5C6CB] text-xs font-mono space-y-0.5">
+                              <p className="text-red-800 font-semibold flex items-center gap-1">
+                                <span>✕</span>
+                                <span>Người bán đã từ chối giá {formatPrice(item.latest_offered_price || 0)}</span>
+                              </p>
+                              <p className="text-[10px] text-red-700">
+                                Sản phẩm hiện áp dụng mức giá niêm yết ban đầu.
+                              </p>
+                            </div>
+                          )}
+
+                          <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-2 border-t border-[#F0F0EE]">
+                            <p className="text-xs text-[#888888]">Số lượng: {item.quantity || 1}</p>
+
+                            {/* Single Item Checkout Action */}
+                            <button
+                              type="button"
+                              onClick={() => handleCheckoutSingle(item)}
+                              className="text-xs font-mono uppercase tracking-wider text-[#111111] hover:text-[#2A2A2A] font-semibold flex items-center gap-1 bg-[#F5F5F4] hover:bg-[#EBEBEA] px-3 py-1.5 transition-colors border border-[#E5E5E3]"
+                            >
+                              <span>Mua sản phẩm</span>
+                              <span className="text-[10px]">→</span>
+                            </button>
+                          </div>
                         </div>
 
                         {/* Delete */}
@@ -762,12 +883,20 @@ export default function CartPage() {
                 {/* RIGHT — Order Summary */}
                 <div className="lg:w-80 xl:w-96">
                   <OrderSummary
-                    cartItems={cartItems}
+                    cartItems={activeCheckoutItems}
                     onProceed={() => {
+                      if (activeCheckoutItems.length === 0) {
+                        setError('Vui lòng chọn ít nhất một sản phẩm để thanh toán.')
+                        return
+                      }
                       setError('')
                       setStep('checkout')
                     }}
-                    proceedLabel="TIẾN HÀNH THANH TOÁN"
+                    proceedLabel={
+                      activeCheckoutItems.length === 0
+                        ? 'CHỌN SẢN PHẨM ĐỂ MUA'
+                        : `TIẾN HÀNH THANH TOÁN (${activeCheckoutItems.length})`
+                    }
                   />
                 </div>
               </div>
@@ -1009,7 +1138,7 @@ export default function CartPage() {
 
             {/* RIGHT — Order Summary + Place Order button */}
             <div className="lg:w-80 xl:w-96">
-              <OrderSummary cartItems={cartItems} proceedLabel="">
+              <OrderSummary cartItems={activeCheckoutItems} proceedLabel="">
                 <button
                   onClick={handlePlaceOrder}
                   disabled={submitting}

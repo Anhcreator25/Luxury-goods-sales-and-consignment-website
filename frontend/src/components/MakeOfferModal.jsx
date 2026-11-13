@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { formatPrice } from '../utils/formatters'
 import { offerServices } from '../services/offerServices'
+import { cartServices } from '../services/cartServices'
 
 export default function MakeOfferModal({ isOpen, onClose, product, onSuccess }) {
   if (!isOpen || !product) return null
@@ -44,6 +45,15 @@ export default function MakeOfferModal({ isOpen, onClose, product, onSuccess }) 
         offered_price: num,
         buyer_note: note.trim(),
       })
+
+      //automatically add products to the shopping cart so users can keep track of them
+      try {
+        await cartServices.addToCart(product.id, 1)
+        window.dispatchEvent(new Event('cart-updated'))
+      } catch (cartErr) {
+      
+      }
+
       if (onSuccess) onSuccess()
       onClose()
     } catch (err) {

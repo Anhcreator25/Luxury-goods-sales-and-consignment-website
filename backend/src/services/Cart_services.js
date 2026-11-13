@@ -23,6 +23,16 @@ export const getCartServices = async (userId) => {
                   AND o.status = 'accepted'
                   AND o.created_at >= NOW() - INTERVAL 24 HOUR
                 ORDER BY o.id DESC LIMIT 1) AS accepted_offer_id,
+               (SELECT o.status 
+                FROM offers o 
+                WHERE o.listing_id = l.id 
+                  AND o.buyer_id = ? 
+                ORDER BY o.id DESC LIMIT 1) AS latest_offer_status,
+               (SELECT o.offered_price 
+                FROM offers o 
+                WHERE o.listing_id = l.id 
+                  AND o.buyer_id = ? 
+                ORDER BY o.id DESC LIMIT 1) AS latest_offered_price,
                l.condition_grade,
                li.image_url AS primary_image,
                u.name AS seller_name
@@ -33,7 +43,7 @@ export const getCartServices = async (userId) => {
         WHERE ci.user_id = ? AND l.status = 'active'
     `;
     
-    const [items] = await pool.query(query, [userId, userId, userId]);
+    const [items] = await pool.query(query, [userId, userId, userId, userId, userId]);
     return items;            
 }
 
