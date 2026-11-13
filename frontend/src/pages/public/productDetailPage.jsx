@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
-import { formatPrice, CONDITION_MAP } from '../../utils/formatters'
+import { formatPrice, CONDITION_MAP, formatConditionGrade } from '../../utils/formatters'
 import { listingServices, cartServices } from '../../services'
 import MakeOfferModal from '../../components/MakeOfferModal'
 import SellerReputationCard from '../../components/SellerReputationCard'
@@ -134,8 +134,8 @@ export default function ProductDetailPage() {
   const hasImages = images.length > 0
   const mainImageSrc = hasImages ? images[activeImage] : "https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=800&q=80"
 
-  const conditionInfo = CONDITION_MAP[product?.condition_grade] || { label: product?.condition_grade || 'Tiêu chuẩn thẩm định' }
-  const badgeLabel = conditionInfo.label
+  const conditionInfo = CONDITION_MAP[product?.condition_grade] || { label: formatConditionGrade(product?.condition_grade) }
+  const badgeLabel = formatConditionGrade(product?.condition_grade) || conditionInfo.label
 
   return (
     <div className="min-h-screen bg-[#FBFBFA] selection:bg-[#111111] selection:text-white">
@@ -288,7 +288,7 @@ export default function ProductDetailPage() {
                 className="w-full py-3.5 bg-[#FAF9F7] hover:bg-[#F3EFE6] border border-[#111111] text-[#111111] text-xs font-mono uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>🏷️</span>
-                <span>Thương Lượng / Đề Xuất Giá (Make an Offer)</span>
+                <span> Thương lượng giá</span>
               </button>
 
               {!token && (

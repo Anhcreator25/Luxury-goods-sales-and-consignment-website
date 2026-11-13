@@ -4,6 +4,7 @@ import Navbar from '../../components/Navbar';
 import ProductCard from '../../components/ProductCard';
 import Footer from '../../components/Footer';
 import { listingServices } from '../../services';
+import { formatConditionGrade } from '../../utils/formatters';
 
 // ---------------------------------------------------------------------------
 // Category map: display name → API category_id (Khớp chuẩn Database MySQL)
@@ -17,12 +18,14 @@ const CATEGORIES = [
   { label: 'Trang Sức & Phụ Kiện', id: 5, desc: 'Tinh hoa trang sức kim cương, vàng khối từ Cartier, Van Cleef & Arpels, Bvlgari.' },
 ];
 
+// ---------------------------------------------------------------------------
+// 4 Cấp độ Tình Trạng Chuẩn Quốc Tế Chrono24
+// ---------------------------------------------------------------------------
 const CONDITIONS = [
-  'Brand New (100% - Fullbox)',
-  'Like New (99%)',
-  'Excellent (97%)',
-  'Very Good (95%)',
-  'Good (90%)'
+  { value: 'UNWORN',    label: 'Chưa qua sử dụng (Mới 100%)', keywords: ['unworn', 'brand new', 'pristine', '100%'] },
+  { value: 'VERY_GOOD', label: 'Rất tốt (Như mới)',           keywords: ['very_good', 'very good', 'like new', '99%', '98%'] },
+  { value: 'GOOD',      label: 'Tốt (Đã sử dụng)',            keywords: ['good', 'excellent', '97%', '95%', '90%'] },
+  { value: 'FAIR',      label: 'Khá (Dấu vết thời gian)',     keywords: ['fair', 'used', '70%', '80%', '85%'] }
 ];
 
 const SORT_OPTIONS = [
@@ -50,7 +53,18 @@ function applyLocalFilters(products, { minPrice, maxPrice, conditions, brand }) 
     const itemPrice = Number(p.selling_price ?? p.price ?? 0);
     if (minPrice !== '' && itemPrice < Number(minPrice)) return false;
     if (maxPrice !== '' && itemPrice > Number(maxPrice)) return false;
-    if (conditions.length > 0 && !conditions.includes(p.condition_grade)) return false;
+    if (conditions.length > 0) {
+      const pCond = String(p.condition_grade || '').toLowerCase();
+      // So khớp với các nhóm điều kiện chuẩn Chrono24
+      const matched = conditions.some((cVal) => {
+        const condObj = CONDITIONS.find((c) => c.value === cVal);
+        if (condObj) {
+          return condObj.keywords.some((kw) => pCond.includes(kw));
+        }
+        return pCond.includes(cVal.toLowerCase());
+      });
+      if (!matched) return false;
+    }
     if (brand.trim() !== '') {
       const brandStr = (p.brand_name || p.brand || '').toLowerCase();
       if (!brandStr.includes(brand.trim().toLowerCase())) return false;
@@ -288,19 +302,23 @@ export default function ShopPage() {
                   Tình Trạng
                 </p>
                 <div className="space-y-2.5">
-                  {CONDITIONS.map((cond) => (
-                    <label key={cond} className="flex items-center gap-2.5 cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        checked={pendingConditions.includes(cond)}
-                        onChange={() => handleConditionToggle(cond)}
-                        className="accent-[#111111]"
-                      />
-                      <span className="text-xs text-[#555555] group-hover:text-[#111111] transition-colors">
-                        {cond}
-                      </span>
-                    </label>
-                  ))}
+                  {CONDITIONS.map((cond) => {
+                    const condValue = typeof cond === 'object' ? cond.value : cond;
+                    const condLabel = typeof cond === 'object' ? cond.label : formatConditionGrade(cond);
+                    return (
+                      <label key={condValue} className="flex items-center gap-2.5 cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={pendingConditions.includes(condValue)}
+                          onChange={() => handleConditionToggle(condValue)}
+                          className="accent-[#111111]"
+                        />
+                        <span className="text-xs text-[#555555] group-hover:text-[#111111] transition-colors">
+                          {condLabel}
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
 

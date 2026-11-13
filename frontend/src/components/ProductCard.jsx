@@ -1,5 +1,5 @@
 import React from "react";
-import { formatPrice } from "../utils/formatters";
+import { formatPrice, formatConditionGrade } from "../utils/formatters";
 
 export default function ProductCard({ product, onSelect, onDetail }) {
   const imageUrl = product.primary_image || 
@@ -29,7 +29,7 @@ export default function ProductCard({ product, onSelect, onDetail }) {
         {/* Delicate Frosted Glass Condition Badge */}
         {product.condition_grade && (
           <div className="absolute top-3 left-3 bg-white/85 backdrop-blur-md border border-[#EAEAE8] text-[#222222] text-[9px] font-mono uppercase tracking-[0.18em] px-2.5 py-1 shadow-sm">
-            {product.condition_grade}
+            {formatConditionGrade(product.condition_grade)}
           </div>
         )}
 

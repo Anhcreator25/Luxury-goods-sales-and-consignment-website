@@ -23,12 +23,10 @@ const CATEGORIES = [
 ]
 
 const CONDITIONS = [
-  { value: 'Brand New (100% - Fullbox)', label: 'Brand New (100% - Fullbox)' },
-  { value: 'Like New (99%)',             label: 'Like New (99%)' },
-  { value: 'Excellent (97%)',            label: 'Excellent (97%)' },
-  { value: 'Very Good (95%)',            label: 'Very Good (95%)' },
-  { value: 'Good (90%)',                 label: 'Good (90%)' },
-  { value: 'Fair / Lightly Used (70% - 85%)', label: 'Fair / Lightly Used (70% - 85%)' },
+  { value: 'UNWORN',    label: 'Chưa qua sử dụng (Mới 100%)' },
+  { value: 'VERY_GOOD', label: 'Rất tốt (Như mới 98% - 99%)' },
+  { value: 'GOOD',      label: 'Tốt (Đã sử dụng cẩn thận)' },
+  { value: 'FAIR',      label: 'Khá (Dấu vết thời gian)' },
 ]
 
 const BRAND_OPTIONS = [
@@ -43,7 +41,7 @@ const BRAND_OPTIONS = [
 
 const EMPTY_FORM = {
   title: '', brand: 'Gucci', brand_id: 4, description: '', price: '', original_price: '',
-  category_id: 1, condition_grade: 'Excellent (97%)',
+  category_id: 1, condition_grade: 'UNWORN',
   imageUrls: [''], // array of image URL strings, up to 5
 }
 

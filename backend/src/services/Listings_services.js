@@ -99,7 +99,7 @@ export const createListingService = async(sellerId, data)=>{
         category_id,
         title,
         resolvedBrandId || null,
-        condition_grade || 'LIKE_NEW (99%)',
+        condition_grade || 'UNWORN',
         original_price || null,
         selling_price,
         description || null,
