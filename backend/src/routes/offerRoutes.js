@@ -1,5 +1,5 @@
 import express from 'express';
-import { verifyToken } from '../middlwares/authmiddlware.js';
+import { verifyToken } from '../middlewares/authMiddleware.js';
 import * as offerController from '../controller/Offer_controller.js';
 
 const router = express.Router();

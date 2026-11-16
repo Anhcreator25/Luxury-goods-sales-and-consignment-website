@@ -10,7 +10,8 @@ export const verifyToken = (req, res, next) => {
         }
 
 
-        jwt.verify(token, process.env.JWT_SECRECT, (err, decoded) => {
+        const jwtSecret = process.env.JWT_SECRET || process.env.JWT_SECRECT;
+        jwt.verify(token, jwtSecret, (err, decoded) => {
             if (err) {
                 console.log("Error detail verify", err.message); 
                 return res.status(403).json({
@@ -54,7 +55,8 @@ export const optionalAuth = (req, res, next) => {
         const token = authHeader && authHeader.split(' ')[1];
 
         if (token) {
-            jwt.verify(token, process.env.JWT_SECRECT, (err, decoded) => {
+            const jwtSecret = process.env.JWT_SECRET || process.env.JWT_SECRECT;
+        jwt.verify(token, jwtSecret, (err, decoded) => {
                 if (!err) {
                     req.user = decoded;
                 }

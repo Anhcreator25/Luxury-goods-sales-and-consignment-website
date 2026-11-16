@@ -1,7 +1,7 @@
 import express from 'express'
 import * as listingController from '../controller/Listings_controller.js'
-import { verifyToken, verifyRole, optionalAuth } from '../middlwares/authmiddlware.js';
-import { createItemsLimiter } from '../middlwares/rateLimiter.js';
+import { verifyToken, verifyRole, optionalAuth } from '../middlewares/authMiddleware.js';
+import { createItemsLimiter } from '../middlewares/rateLimiter.js';
 const router = express.Router();
  
 router.get('/brands', listingController.getBrandsController);

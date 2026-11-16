@@ -1,7 +1,7 @@
 import express from 'express'
 import * as orderController from '../controller/orderController.js'
-import { verifyToken, verifyRole } from '../middlwares/authmiddlware.js'
-import  {cancelItemslimiter} from '../middlwares/rateLimiter.js'
+import { verifyToken, verifyRole } from '../middlewares/authMiddleware.js'
+import { cancelItemslimiter } from '../middlewares/rateLimiter.js'
 
 const router = express.Router();
 

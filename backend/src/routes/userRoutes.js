@@ -1,6 +1,6 @@
 import express from 'express'
 import * as userRole from '../controller/User_controller.js'
-import {loginLimiter,registerLimiter} from '../middlwares/rateLimiter.js'
+import { loginLimiter, registerLimiter } from '../middlewares/rateLimiter.js'
 
 const router= express.Router();
 
