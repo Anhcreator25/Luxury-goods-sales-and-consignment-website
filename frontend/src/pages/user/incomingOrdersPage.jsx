@@ -77,13 +77,33 @@ function IncomingOrderCard({ order, onConfirm }) {
         </div>
 
         {/* Buyer Info */}
-        <div className="bg-[#F5F5F3] border border-[#E5E5E3] px-4 py-3 mb-4">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888] mb-1">Người Mua</p>
-          <p className="text-sm font-semibold text-[#111111]">
-            {order.buyer?.name || order.buyer_name || 'Khách Hàng'}
-          </p>
+        <div className="bg-[#F5F5F3] border border-[#E5E5E3] px-4 py-3 mb-4 space-y-1">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Thông Tin Khách Mua Hàng</p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <p className="text-sm font-semibold text-[#111111]">
+              👤 {order.buyer_name || order.buyer?.name || 'Khách Hàng'}
+            </p>
+            {order.phone_number && (
+              <p className="text-xs font-mono text-[#555555]">
+                📞 SĐT: <strong className="text-[#111111]">{order.phone_number}</strong>
+              </p>
+            )}
+          </div>
           <p className="text-xs text-[#888888] font-mono">
-            {order.buyer?.email || order.buyer_email || '—'}
+            ✉️ {order.buyer_email || order.buyer?.email || '—'}
+          </p>
+          {order.shipping_address && (
+            <p className="text-xs text-[#555555] font-mono pt-1 border-t border-[#EAEAE8] mt-1">
+              📍 Giao đến: <span className="text-[#111111]">{order.shipping_address}</span>
+            </p>
+          )}
+        </div>
+
+        {/* Escrow Vault Assurance Badge for Seller */}
+        <div className="bg-[#F4F8FA] border border-[#D0E2EB] px-3.5 py-2.5 mb-4 flex items-center gap-2">
+          <span className="text-sm">🛡️</span>
+          <p className="text-xs text-[#1C5370] font-mono">
+            <strong>Bảo Đảm Ký Quỹ:</strong> Tiền mua hàng đã được bảo đảm tại Quỹ Aura Vault. Tiền sẽ được giải ngân về STK của bạn sau khi người mua nhận hàng.
           </p>
         </div>
 
@@ -151,7 +171,7 @@ export default function IncomingOrdersPage() {
       setError('')
       try {
         const [ordersRes, offersRes] = await Promise.allSettled([
-          orderServices.getOrders(),
+          orderServices.getSellerIncomingOrders(),
           offerServices.getReceivedOffers(),
         ])
 
