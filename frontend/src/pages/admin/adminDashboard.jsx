@@ -9,6 +9,7 @@ import AdminOrdersTable from './components/AdminOrdersTable'
 import AdminPendingListings from './components/AdminPendingListings'
 import AdminListingDetailModal from './components/AdminListingDetailModal'
 import AdminUsersTab from './components/AdminUsersTab'
+import AdminEscrowVaultTab from './components/AdminEscrowVaultTab'
 import { PLATFORM_CONFIG } from '../../config/platformConfig'
 
 // Navigation tab identifiers
@@ -16,6 +17,7 @@ const TABS = [
   { id: 'overview', label: 'Tổng Quan' },
   { id: 'listings', label: 'Duyệt Tin Đăng' },
   { id: 'users',    label: 'Người Dùng' },
+  { id: 'escrow',   label: 'Ký Quỹ & Giải Ngân' },
 ]
 
 export default function AdminDashboard() {
@@ -84,7 +86,20 @@ export default function AdminDashboard() {
     Promise.allSettled([
       orderServices.getOrders(),
       listingServices.getListings(),
-    ]).then(([ordersRes, listingsRes]) => {
+      orderServices.getAdminEscrowPayouts(),
+    ]).then(([ordersRes, listingsRes, escrowRes]) => {
+      let realizedCommission = 0
+
+      // calculate realized commission from completed escrow payouts only
+      if (escrowRes.status === 'fulfilled') {
+        const payouts = escrowRes.value.data?.data ?? escrowRes.value.data ?? []
+        if (Array.isArray(payouts)) {
+          realizedCommission = payouts
+            .filter(p => p.payout_status === 'completed')
+            .reduce((sum, p) => sum + (Number(p.commission_fee) || 0), 0)
+        }
+      }
+
       // orders
       if (ordersRes.status === 'fulfilled') {
         const orders = ordersRes.value.data?.orders ?? ordersRes.value.data ?? []
@@ -102,12 +117,11 @@ export default function AdminDashboard() {
           const cancelledOrders = orders.filter(isCancelledOrder)
 
           const revenue = paidOrders.reduce((s, o) => s + (Number(o.total_price || o.total_amount) || 0), 0)
-          const commission = Math.round(revenue * PLATFORM_CONFIG.COMMISSION_RATE)
 
           setStats(prev => ({
             ...prev,
             revenue,
-            commission,
+            commission: Math.round(realizedCommission),
             orders: orders.length,
             paidOrders: paidOrders.length,
             pendingOrders: pendingOrders.length,
@@ -300,6 +314,11 @@ export default function AdminDashboard() {
         {/* ════ TAB 3: NGƯỜI DÙNG ═══════════════════════════════════════ */}
         {activeTab === 'users' && (
           <AdminUsersTab />
+        )}
+
+        {/* ════ TAB 4: KÝ QUỸ & GIẢI NGÂN (AURA VAULT) ══════════════════ */}
+        {activeTab === 'escrow' && (
+          <AdminEscrowVaultTab />
         )}
 
       </div>

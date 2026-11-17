@@ -4,12 +4,14 @@ import axiosClient from "./axiosClient";
  * Service handling customer orders and checkout operations.
  */
 export const orderServices = {
-  /**
-   * Fetch order history (buyer orders, seller incoming orders, or admin overview).
-   * @returns {Promise<any>}
-   */
+  // Fetch order history for buyer
   getOrders: async () => {
     return await axiosClient.get("/orders");
+  },
+
+  // Fetch incoming orders for seller whose listings were purchased
+  getSellerIncomingOrders: async () => {
+    return await axiosClient.get("/orders/seller/incoming");
   },
 
   /**
@@ -44,5 +46,15 @@ export const orderServices = {
   // Confirm receipt of order items by buyer
   confirmReceipt: async (orderId) => {
     return await axiosClient.put(`/orders/${orderId}/confirm-receipt`);
+  },
+
+  // Fetch all escrow payouts for admin
+  getAdminEscrowPayouts: async () => {
+    return await axiosClient.get("/orders/admin/escrow");
+  },
+
+  // Disburse escrow payout by admin
+  disburseEscrowPayout: async (payoutId, payload) => {
+    return await axiosClient.post(`/orders/admin/escrow/${payoutId}/disburse`, payload);
   },
 };

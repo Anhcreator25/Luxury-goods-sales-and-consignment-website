@@ -55,9 +55,9 @@ export const createOrderServices = async (userId, orderData,cartItemId)=> {
                 }
             }
             
-            // Caculate totalAmount & Platform Commission (3%)
+            // Calculate totalAmount & Platform Commission from ENV (default 5%)
             const totalAmount = cartItems.reduce((sum,item)=> sum + (item.selling_price * item.quantity),0);
-            const COMMISSON_RATE = parseFloat(process.env.PLATFORM_COMMISSION_RATE) || 0.03;
+            const COMMISSON_RATE = parseFloat(process.env.PLATFORM_COMMISSION_RATE) || 0.05;
             const commissionFee = Math.round(totalAmount * COMMISSON_RATE);
             const sellPayout = totalAmount - commissionFee;
             
@@ -175,6 +175,66 @@ export const getOrderByRoleServices = async (user) => {
                 JOIN listings l ON oi.listing_id = l.id
                 WHERE oi.order_id = ?`, 
                 [order.order_id]
+            );
+            
+            order.items = items;
+        }
+
+        return orders;
+
+    } finally {
+        connection.release();
+    }
+};
+
+// Retrieve incoming orders specifically for seller whose products were purchased
+export const getSellerIncomingOrdersService = async (sellerId) => {
+    const connection = await pool.getConnection();
+
+    try {
+        const query = `
+            SELECT DISTINCT
+                o.id AS order_id,
+                o.id AS id,
+                o.buyer_id,
+                u.name AS buyer_name,
+                u.email AS buyer_email,
+                o.shipping_address,
+                o.phone AS phone_number,
+                o.total_amount,
+                o.total_amount AS total_price,
+                o.commission_fee,
+                o.seller_payout,
+                o.order_status,
+                o.order_status AS status,
+                o.payment_status,
+                o.payment_method,
+                o.created_at
+            FROM orders o
+            JOIN order_items oi ON oi.order_id = o.id
+            JOIN listings l ON l.id = oi.listing_id
+            JOIN users u ON u.id = o.buyer_id
+            WHERE l.seller_id = ?
+            ORDER BY o.created_at DESC
+        `;
+
+        const [orders] = await connection.query(query, [sellerId]);
+
+        for (let order of orders) {
+            const [items] = await connection.query(`
+                SELECT 
+                   oi.id AS order_item_id,
+                   oi.quantity,
+                   oi.price,
+                   l.id AS listing_id,
+                   l.title AS product_title,
+                   l.title AS title,
+                   l.seller_id AS seller_id,
+                   (SELECT image_url FROM listing_images WHERE listing_id = l.id AND is_primary = 1 LIMIT 1) AS primary_image
+                FROM order_items oi 
+                JOIN listings l ON oi.listing_id = l.id
+                WHERE oi.order_id = ? AND l.seller_id = ?`, 
+                [order.order_id, sellerId]
             );
             
             order.items = items;
@@ -392,6 +452,129 @@ export const confirmOrderReceiptService = async (orderId, userId) => {
             success: true,
             orderId,
             message: "Xác nhận nhận hàng thành công! Đơn hàng đã hoàn tất."
+        };
+
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
+};
+
+// Retrieve all escrow payouts with seller bank accounts for admin dashboard
+export const getAdminEscrowPayoutsService = async () => {
+    const connection = await pool.getConnection();
+
+    try {
+        const query = `
+            SELECT 
+                ep.id AS payout_id,
+                ep.order_id,
+                ep.seller_id,
+                ep.amount,
+                ep.commission_fee,
+                (ep.amount - ep.commission_fee) AS net_payout,
+                ep.status AS payout_status,
+                ep.recipient_bank,
+                ep.recipient_account,
+                ep.recipient_name,
+                ep.transaction_ref,
+                ep.disbursed_at,
+                ep.disbursed_by,
+                ep.created_at,
+                o.order_status,
+                o.payment_status,
+                u.name AS seller_name,
+                u.email AS seller_email,
+                uba.bank_name AS default_bank_name,
+                uba.bank_account_number AS default_account_number,
+                uba.bank_account_holder AS default_account_holder
+            FROM escrow_payouts ep
+            JOIN orders o ON o.id = ep.order_id
+            JOIN users u ON u.id = ep.seller_id
+            LEFT JOIN user_bank_accounts uba ON uba.user_id = ep.seller_id AND uba.is_default = 1
+            ORDER BY ep.created_at DESC
+        `;
+
+        const [rows] = await connection.query(query);
+        return rows;
+
+    } finally {
+        connection.release();
+    }
+};
+
+// Disburse escrow payout and persist banking snapshot
+export const disburseEscrowPayoutService = async (payoutId, adminId, data = {}) => {
+    const connection = await pool.getConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        const [payouts] = await connection.query(
+            `SELECT ep.*, o.order_status, uba.bank_name, uba.bank_account_number, uba.bank_account_holder
+             FROM escrow_payouts ep
+             JOIN orders o ON o.id = ep.order_id
+             LEFT JOIN user_bank_accounts uba ON uba.user_id = ep.seller_id AND uba.is_default = 1
+             WHERE ep.id = ? FOR UPDATE`,
+            [payoutId]
+        );
+
+        if (payouts.length === 0) {
+            const error = new Error("Bản ghi ký quỹ không tồn tại.");
+            error.status = 404;
+            throw error;
+        }
+
+        const payout = payouts[0];
+
+        // Strict validation: Only allow disbursement when order is fully completed
+        if (payout.order_status !== 'completed') {
+            const error = new Error(`Không thể giải ngân! Đơn hàng #${payout.order_id} đang ở trạng thái "${payout.order_status}". Chỉ được giải ngân khi khách hàng đã bấm nhận hàng (completed).`);
+            error.status = 400;
+            throw error;
+        }
+
+        const recipientBank = data.recipient_bank || payout.bank_name;
+        const recipientAccount = data.recipient_account || payout.bank_account_number;
+        const recipientName = data.recipient_name || payout.bank_account_holder;
+
+        // Strict validation: Seller must have linked a valid bank account
+        if (!recipientAccount || !recipientBank) {
+            const error = new Error(`Không thể giải ngân! Người bán chưa cung cấp tài khoản ngân hàng để nhận tiền.`);
+            error.status = 400;
+            throw error;
+        }
+
+        if (payout.status === 'completed') {
+            await connection.commit();
+            return { success: true, message: "Khoản ký quỹ này đã được giải ngân trước đó." };
+        }
+
+        const transactionRef = data.transaction_ref ? data.transaction_ref.trim() : null;
+        const note = data.note ? data.note.trim() : null;
+
+        await connection.query(
+            `UPDATE escrow_payouts 
+             SET status = 'completed',
+                 recipient_bank = ?,
+                 recipient_account = ?,
+                 recipient_name = ?,
+                 transaction_ref = ?,
+                 disbursed_by = ?,
+                 disbursed_at = NOW(),
+                 note = ?
+             WHERE id = ?`,
+            [recipientBank, recipientAccount, recipientName, transactionRef, adminId, note, payoutId]
+        );
+
+        await connection.commit();
+
+        return {
+            success: true,
+            payoutId,
+            message: "Giải ngân thành công! Đã lưu trữ chứng từ thanh toán."
         };
 
     } catch (error) {

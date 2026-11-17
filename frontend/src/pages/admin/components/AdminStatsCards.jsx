@@ -12,7 +12,7 @@ export default function AdminStatsCards({ stats, loadingStats }) {
     {
       label: `Hoa Hồng Sàn (${PLATFORM_CONFIG.commissionPercent}%)`,
       value: loadingStats ? '—' : formatPrice(stats.commission),
-      sub: `${PLATFORM_CONFIG.commissionPercent}% trên đơn thành công`,
+      sub: 'Thực thu từ các đơn đã giải ngân',
     },
     {
       label: 'Đơn Thành Công',

@@ -3,7 +3,10 @@ import {
     getOrderByRoleServices, 
     updatePaymentSuccessService, 
     cancelOrderServices,
-    confirmOrderReceiptService 
+    confirmOrderReceiptService,
+    getAdminEscrowPayoutsService,
+    disburseEscrowPayoutService,
+    getSellerIncomingOrdersService
 } from "../services/Order_services.js";
 
 export const createOrderController = async ( req, res) => {
@@ -55,6 +58,25 @@ export const getOrdersController = async (req, res) => {
         return res.status(error.status || 500).json({
             success: false,
             message: error.message || "Internal server error while fetching orders"
+        });
+    }
+};
+
+// Retrieve incoming orders for seller
+export const getSellerIncomingOrdersController = async (req, res) => {
+    try {
+        const sellerId = req.user.id;
+        const orders = await getSellerIncomingOrdersService(sellerId);
+        return res.status(200).json({
+            success: true,
+            count: orders.length,
+            message: "Get seller incoming orders successfully",
+            data: orders
+        });
+    } catch (error) {
+        return res.status(error.status || 500).json({
+            success: false,
+            message: error.message || "Lỗi khi lấy danh sách đơn từ khách mua"
         });
     }
 };
@@ -110,6 +132,38 @@ export const confirmReceiptController = async (req, res) => {
         return res.status(error.status || 500).json({
             success: false,
             message: error.message || "Lỗi máy chủ khi xác nhận nhận hàng"
+        });
+    }
+};
+
+// Retrieve all escrow payouts for admin dashboard
+export const getAdminEscrowPayoutsController = async (req, res) => {
+    try {
+        const payouts = await getAdminEscrowPayoutsService();
+        return res.status(200).json({
+            success: true,
+            data: payouts
+        });
+    } catch (error) {
+        return res.status(error.status || 500).json({
+            success: false,
+            message: error.message || "Lỗi khi lấy danh sách ký quỹ"
+        });
+    }
+};
+
+// Disburse escrow payout by admin
+export const disburseEscrowPayoutController = async (req, res) => {
+    try {
+        const payoutId = req.params.id;
+        const adminId = req.user.id;
+
+        const result = await disburseEscrowPayoutService(payoutId, adminId, req.body);
+        return res.status(200).json(result);
+    } catch (error) {
+        return res.status(error.status || 500).json({
+            success: false,
+            message: error.message || "Lỗi khi thực hiện giải ngân"
         });
     }
 };
