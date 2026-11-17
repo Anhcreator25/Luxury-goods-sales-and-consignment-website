@@ -317,3 +317,87 @@ export const cancelOrderServices = async (orderId, userId, userRole = 'user') =>
         connection.release();
     }
 };
+
+// Confirm order delivery receipt by buyer and complete the order
+export const confirmOrderReceiptService = async (orderId, userId) => {
+    const connection = await pool.getConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        // 1. Check order existence and ownership
+        const [orders] = await connection.query(
+            `SELECT id, buyer_id, total_amount, payment_status, order_status FROM orders WHERE id = ? FOR UPDATE`,
+            [orderId]
+        );
+
+        if (orders.length === 0) {
+            const error = new Error("Đơn hàng không tồn tại.");
+            error.status = 404;
+            throw error;
+        }
+
+        const order = orders[0];
+
+        // Security check: Only the buyer can confirm receipt
+        if (Number(order.buyer_id) !== Number(userId)) {
+            const error = new Error("Bạn không có quyền xác nhận nhận hàng cho đơn hàng này.");
+            error.status = 403;
+            throw error;
+        }
+
+        // Only paid orders can be confirmed
+        if (order.payment_status !== 'paid') {
+            const error = new Error("Đơn hàng chưa được thanh toán thành công, không thể xác nhận nhận hàng.");
+            error.status = 400;
+            throw error;
+        }
+
+        if (order.order_status === 'completed') {
+            await connection.commit();
+            return { success: true, message: "Đơn hàng này đã được xác nhận hoàn thành trước đó." };
+        }
+
+        // 2. Update order status to completed
+        await connection.query(
+            `UPDATE orders SET order_status = 'completed' WHERE id = ?`,
+            [orderId]
+        );
+
+        // 3. Ensure escrow record exists and ready for payout
+        const [escrowRows] = await connection.query(
+            `SELECT id FROM escrow_payouts WHERE order_id = ?`,
+            [orderId]
+        );
+
+        if (escrowRows.length === 0) {
+            // Find seller from order items
+            const [itemRows] = await connection.query(
+                `SELECT l.seller_id FROM order_items oi JOIN listings l ON l.id = oi.listing_id WHERE oi.order_id = ? LIMIT 1`,
+                [orderId]
+            );
+            const sellerId = itemRows.length > 0 ? itemRows[0].seller_id : null;
+            if (sellerId) {
+                const commission = Math.round(Number(order.total_amount) * 0.05);
+                await connection.query(
+                    `INSERT INTO escrow_payouts (order_id, seller_id, amount, commission_fee, status) VALUES (?, ?, ?, ?, 'pending')`,
+                    [orderId, sellerId, order.total_amount, commission]
+                );
+            }
+        }
+
+        await connection.commit();
+
+        return {
+            success: true,
+            orderId,
+            message: "Xác nhận nhận hàng thành công! Đơn hàng đã hoàn tất."
+        };
+
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
+};

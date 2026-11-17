@@ -1,4 +1,10 @@
-import { createOrderServices, getOrderByRoleServices, updatePaymentSuccessService, cancelOrderServices } from "../services/Order_services.js";
+import { 
+    createOrderServices, 
+    getOrderByRoleServices, 
+    updatePaymentSuccessService, 
+    cancelOrderServices,
+    confirmOrderReceiptService 
+} from "../services/Order_services.js";
 
 export const createOrderController = async ( req, res) => {
     try {
@@ -84,6 +90,26 @@ export const cancelOrderController = async (req, res) => {
         return res.status(error.status || 500).json({
             success: false,
             message: error.message || "Lỗi máy chủ khi hủy đơn hàng"
+        });
+    }
+};
+
+// Confirm delivery receipt and mark order as completed
+export const confirmReceiptController = async (req, res) => {
+    try {
+        const orderId = req.params.id;
+        const userId = req.user.id;
+
+        if (!orderId) {
+            return res.status(400).json({ success: false, message: "Thiếu mã đơn hàng." });
+        }
+
+        const result = await confirmOrderReceiptService(orderId, userId);
+        return res.status(200).json(result);
+    } catch (error) {
+        return res.status(error.status || 500).json({
+            success: false,
+            message: error.message || "Lỗi máy chủ khi xác nhận nhận hàng"
         });
     }
 };

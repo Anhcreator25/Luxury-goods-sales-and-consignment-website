@@ -10,4 +10,7 @@ router.get('/', verifyToken, orderController.getOrdersController);
 router.get('/payment/simulate-checkout',orderController.simulatePaymentSuccessController);
 router.put('/:id/cancel', verifyToken,cancelItemslimiter,orderController.cancelOrderController);
 
+// Confirm order delivery receipt by buyer
+router.put('/:id/confirm-receipt', verifyToken, orderController.confirmReceiptController);
+
 export default router;

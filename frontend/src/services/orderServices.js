@@ -36,12 +36,13 @@ export const orderServices = {
     });
   },
 
-  /**
-   * Cancel an unpaid pending order.
-   * @param {number|string} orderId
-   * @returns {Promise<any>}
-   */
+  // Cancel an unpaid pending order
   cancelOrder: async (orderId) => {
     return await axiosClient.put(`/orders/${orderId}/cancel`);
+  },
+
+  // Confirm receipt of order items by buyer
+  confirmReceipt: async (orderId) => {
+    return await axiosClient.put(`/orders/${orderId}/confirm-receipt`);
   },
 };
