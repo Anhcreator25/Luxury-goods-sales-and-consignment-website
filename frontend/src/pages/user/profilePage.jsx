@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import { orderServices, listingServices } from '../../services'
+import BankAccountsSection from './components/BankAccountsSection'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
@@ -267,6 +268,9 @@ export default function ProfilePage() {
                 </div>
               </form>
             </div>
+
+            {/* ── BANK ACCOUNTS SECTION ── */}
+            <BankAccountsSection />
 
             {/* ── CHANGE PASSWORD ── */}
             <div className="border border-[#E5E5E3] bg-white p-6">
