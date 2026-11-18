@@ -17,6 +17,28 @@ const TABS = [
   { key: 'cancelled', label: 'Đã Hủy' },
 ]
 
+/**
+ * Kiểm tra xem đề xuất giá đã quá hạn 24 giờ hay chưa
+ * @param {string|Date} createdAt 
+ * @returns {{ isExpired: boolean, hoursLeft: number, minutesLeft: number }}
+ */
+function checkOfferExpiry(createdAt) {
+  if (!createdAt) return { isExpired: false, hoursLeft: 24, minutesLeft: 0 };
+  const createdTime = new Date(createdAt).getTime();
+  const now = Date.now();
+  const diffMs = now - createdTime;
+  const totalLimitMs = 24 * 60 * 60 * 1000;
+  
+  if (diffMs >= totalLimitMs) {
+    return { isExpired: true, hoursLeft: 0, minutesLeft: 0 };
+  }
+  
+  const remainingMs = totalLimitMs - diffMs;
+  const hoursLeft = Math.floor(remainingMs / (1000 * 60 * 60));
+  const minutesLeft = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+  return { isExpired: false, hoursLeft, minutesLeft };
+}
+
 // Animated skeleton placeholder for orders list loading
 function SkeletonCard() {
   return (
@@ -301,86 +323,126 @@ export default function MyOrdersPage() {
                 </Link>
               </div>
             ) : (
-              sentOffers.map((offer) => (
-                <div key={offer.id} className="border border-[#E5E5E3] bg-white p-5 space-y-4 shadow-sm font-sans">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F0F0EE] pb-3">
-                    <div className="flex items-center gap-3">
-                      {offer.primary_image && (
-                        <img src={offer.primary_image} alt="" className="w-14 h-14 object-cover border border-[#E5E5E3]" />
-                      )}
-                      <div>
-                        <h4 className="text-sm font-serif font-medium text-[#111111]">{offer.listing_title}</h4>
-                        <div className="text-xs font-mono text-[#777777] mt-0.5">
-                          Người bán: <span className="text-[#111111] font-medium">{offer.seller_name || 'Nhà Sưu Tầm Aura'}</span>
-                        </div>
-                      </div>
-                    </div>
+              sentOffers.map((offer) => {
+                const expiry = offer.status === 'accepted' ? checkOfferExpiry(offer.created_at) : null;
+                const isExpired = expiry?.isExpired;
 
-                    <div>
-                      <span className={`text-[10px] font-mono uppercase px-3 py-1 border font-medium ${
-                        offer.status === 'accepted' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
-                        offer.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
-                        'bg-amber-50 text-amber-700 border-amber-200'
-                      }`}>
-                        {offer.status === 'accepted' ? '✓ Người Bán Đã Đồng Ý' : offer.status === 'rejected' ? '✕ Người Bán Đã Từ Chối' : '⏳ Đang Chờ Phản Hồi'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 font-mono text-xs">
-                    <div>
-                      <span className="text-[#888888] text-[10px] uppercase block">Giá Niêm Yết</span>
-                      <span className="text-[#666666] line-through">{formatPrice(offer.listing_price)}</span>
-                    </div>
-                    <div>
-                      <span className="text-[#888888] text-[10px] uppercase block">Giá Bạn Đã Trả</span>
-                      <span className="text-sm font-bold text-[#111111]">{formatPrice(offer.offered_price)}</span>
-                    </div>
-                    <div className="col-span-2 sm:col-span-1">
-                      <span className="text-[#888888] text-[10px] uppercase block">Bạn Tiết Kiệm</span>
-                      <span className="text-xs font-semibold text-[#1E7E34]">
-                        -{formatPrice(Number(offer.listing_price) - Number(offer.offered_price))}
-                      </span>
-                    </div>
-                  </div>
-
-                  {offer.buyer_note && (
-                    <div className="bg-[#FAF9F7] p-2.5 border border-[#EFECE6] text-xs text-[#666666] font-mono">
-                      <span className="font-semibold text-[#111111]">Lời nhắn của bạn: </span>
-                      "{offer.buyer_note}"
-                    </div>
-                  )}
-
-                  {/* Accepted offer action trigger */}
-                  {offer.status === 'accepted' && (
-                    <div className="pt-3 border-t border-[#F0F0EE] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#F2F8F4] p-3 border border-[#D4EDDA]">
-                      <div className="text-xs font-mono text-[#155724] space-y-1">
+                return (
+                  <div key={offer.id} className="border border-[#E5E5E3] bg-white p-5 space-y-4 shadow-sm font-sans">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F0F0EE] pb-3">
+                      <div className="flex items-center gap-3">
+                        {offer.primary_image && (
+                          <img src={offer.primary_image} alt="" className="w-14 h-14 object-cover border border-[#E5E5E3]" />
+                        )}
                         <div>
-                          🎉 <strong>Tuyệt vời!</strong> Người bán đã đồng ý bán cho bạn với giá ưu đãi{' '}
-                          <strong>{formatPrice(offer.offered_price)}</strong>.
-                        </div>
-                        <div className="text-[11px] text-[#28A745] flex items-center gap-1.5">
-                          <span>⏱️</span>
-                          <span>Ưu đãi áp dụng trong vòng <strong>24 Giờ</strong> kể từ khi người bán chấp thuận.</span>
+                          <h4 className="text-sm font-serif font-medium text-[#111111]">{offer.listing_title}</h4>
+                          <div className="text-xs font-mono text-[#777777] mt-0.5">
+                            Người bán: <span className="text-[#111111] font-medium">{offer.seller_name || 'Nhà Sưu Tầm Aura'}</span>
+                          </div>
                         </div>
                       </div>
-                      <button
-                        onClick={async () => {
-                          try {
-                            await cartServices.addToCart(offer.listing_id, 1)
-                          } catch (e) {
-                            // Already in cart or added
-                          }
-                          navigate('/cart')
-                        }}
-                        className="px-5 py-2.5 bg-[#111111] text-white hover:bg-[#2B2B2B] text-xs font-mono uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer shadow-sm"
-                      >
-                        Thanh Toán Giá Ưu Đãi →
-                      </button>
+
+                      <div>
+                        {offer.status === 'accepted' ? (
+                          isExpired ? (
+                            <span className="text-[10px] font-mono uppercase px-3 py-1 border font-medium bg-[#F5F5F4] text-[#777777] border-[#E0E0DE]">
+                              ✕ Ưu Đãi Đã Hết Hạn (Quá 24h)
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-mono uppercase px-3 py-1 border font-medium bg-emerald-50 text-emerald-700 border-emerald-300">
+                              ✓ Người Bán Đã Đồng Ý
+                            </span>
+                          )
+                        ) : offer.status === 'rejected' ? (
+                          <span className="text-[10px] font-mono uppercase px-3 py-1 border font-medium bg-red-50 text-red-700 border-red-200">
+                            ✕ Người Bán Đã Từ Chối
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-mono uppercase px-3 py-1 border font-medium bg-amber-50 text-amber-700 border-amber-200">
+                            ⏳ Đang Chờ Phản Hồi
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 font-mono text-xs">
+                      <div>
+                        <span className="text-[#888888] text-[10px] uppercase block">Giá Niêm Yết</span>
+                        <span className="text-[#666666] line-through">{formatPrice(offer.listing_price)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[#888888] text-[10px] uppercase block">Giá Bạn Đã Trả</span>
+                        <span className="text-sm font-bold text-[#111111]">{formatPrice(offer.offered_price)}</span>
+                      </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <span className="text-[#888888] text-[10px] uppercase block">Bạn Tiết Kiệm</span>
+                        <span className={`text-xs font-semibold ${isExpired ? 'text-[#888888] line-through' : 'text-[#1E7E34]'}`}>
+                          -{formatPrice(Number(offer.listing_price) - Number(offer.offered_price))}
+                        </span>
+                      </div>
+                    </div>
+
+                    {offer.buyer_note && (
+                      <div className="bg-[#FAF9F7] p-2.5 border border-[#EFECE6] text-xs text-[#666666] font-mono">
+                        <span className="font-semibold text-[#111111]">Lời nhắn của bạn: </span>
+                        "{offer.buyer_note}"
+                      </div>
+                    )}
+
+                    {/* Accepted offer action trigger */}
+                    {offer.status === 'accepted' && (
+                      isExpired ? (
+                        <div className="pt-3 border-t border-[#F0F0EE] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#FAF9F7] p-3 border border-[#EAEAE8]">
+                          <div className="text-xs font-mono text-[#777777] space-y-1">
+                            <div>
+                              ⚠️ <strong>Ưu đãi đã hết hạn!</strong> Mức giá ưu đãi{' '}
+                              <strong className="line-through">{formatPrice(offer.offered_price)}</strong> chỉ có hiệu lực trong vòng 24 Giờ.
+                            </div>
+                            <div className="text-[11px] text-[#888888]">
+                              Bạn có thể mua sản phẩm với giá niêm yết ban đầu hoặc gửi đề xuất giá mới.
+                            </div>
+                          </div>
+                          <button
+                            disabled
+                            className="px-5 py-2.5 bg-[#E5E5E3] text-[#888888] text-xs font-mono uppercase tracking-wider whitespace-nowrap cursor-not-allowed shadow-none"
+                            title="Ưu đãi đã quá 24 giờ"
+                          >
+                            Đã Hết Hạn Thanh Toán
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="pt-3 border-t border-[#F0F0EE] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#F2F8F4] p-3 border border-[#D4EDDA]">
+                          <div className="text-xs font-mono text-[#155724] space-y-1">
+                            <div>
+                              🎉 <strong>Tuyệt vời!</strong> Người bán đã đồng ý bán cho bạn với giá ưu đãi{' '}
+                              <strong>{formatPrice(offer.offered_price)}</strong>.
+                            </div>
+                            <div className="text-[11px] text-[#28A745] flex items-center gap-1.5">
+                              <span>⏱️</span>
+                              <span>
+                                Ưu đãi còn hiệu lực trong <strong>{expiry?.hoursLeft} giờ {expiry?.minutesLeft} phút</strong> nữa.
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await cartServices.addToCart(offer.listing_id, 1)
+                              } catch (e) {
+                                // Already in cart or added
+                              }
+                              navigate('/cart')
+                            }}
+                            className="px-5 py-2.5 bg-[#111111] text-white hover:bg-[#C5A880] hover:text-[#0B0C10] text-xs font-mono uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer shadow-sm"
+                          >
+                            Thanh Toán Giá Ưu Đãi →
+                          </button>
+                        </div>
+                      )
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
         )}

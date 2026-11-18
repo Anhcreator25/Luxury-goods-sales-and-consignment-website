@@ -82,15 +82,27 @@ export default function CartItemCard({
         )}
 
         {item.latest_offer_status === 'accepted' && (
-          <div className="mt-2 p-2 bg-[#F2F8F4] border border-[#C3E6CB] text-xs font-mono space-y-0.5">
-            <p className="text-emerald-800 font-semibold flex items-center gap-1">
-              <span>🎉</span>
-              <span>Giá ưu đãi đã duyệt: {formatPrice(price)}</span>
-            </p>
-            <p className="text-[10px] text-emerald-700">
-              Tiết kiệm {formatPrice(Number(item.original_listing_price || price) - Number(price))} (áp dụng trong 24h).
-            </p>
-          </div>
+          item.accepted_offer_id ? (
+            <div className="mt-2 p-2 bg-[#F2F8F4] border border-[#C3E6CB] text-xs font-mono space-y-0.5">
+              <p className="text-emerald-800 font-semibold flex items-center gap-1">
+                <span>🎉</span>
+                <span>Giá ưu đãi đã duyệt: {formatPrice(price)}</span>
+              </p>
+              <p className="text-[10px] text-emerald-700">
+                Tiết kiệm {formatPrice(Number(item.original_listing_price || price) - Number(price))} (áp dụng trong 24h).
+              </p>
+            </div>
+          ) : (
+            <div className="mt-2 p-2 bg-[#F5F5F4] border border-[#E0E0DE] text-xs font-mono space-y-0.5">
+              <p className="text-[#666666] font-semibold flex items-center gap-1">
+                <span>⚠️</span>
+                <span>Ưu đãi giá đề xuất đã hết hạn (quá 24 giờ)</span>
+              </p>
+              <p className="text-[10px] text-[#888888]">
+                Sản phẩm đã tự động trở về giá bán niêm yết: {formatPrice(price)}.
+              </p>
+            </div>
+          )
         )}
 
         {item.latest_offer_status === 'rejected' && (
