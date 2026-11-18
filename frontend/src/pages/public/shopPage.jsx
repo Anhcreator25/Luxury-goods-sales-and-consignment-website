@@ -270,14 +270,14 @@ export default function ShopPage() {
                     placeholder="Giá từ..."
                     value={pendingMinPrice}
                     onChange={(e) => setPendingMinPrice(e.target.value)}
-                    className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-3 py-2 text-xs text-[#111111] focus:outline-none focus:border-[#111111]"
+                    className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-3 py-2 text-xs text-[#111111] focus:outline-none focus:border-[#C5A880]"
                   />
                   <input
                     type="number"
                     placeholder="Giá đến..."
                     value={pendingMaxPrice}
                     onChange={(e) => setPendingMaxPrice(e.target.value)}
-                    className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-3 py-2 text-xs text-[#111111] focus:outline-none focus:border-[#111111]"
+                    className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-3 py-2 text-xs text-[#111111] focus:outline-none focus:border-[#C5A880]"
                   />
                 </div>
               </div>
@@ -292,7 +292,7 @@ export default function ShopPage() {
                   placeholder="Gucci, Rolex, Chanel…"
                   value={pendingBrand}
                   onChange={(e) => setPendingBrand(e.target.value)}
-                  className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-3 py-2 text-xs text-[#111111] focus:outline-none focus:border-[#111111] placeholder:text-[#AAAAAA]"
+                  className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-3 py-2 text-xs text-[#111111] focus:outline-none focus:border-[#C5A880] placeholder:text-[#AAAAAA]"
                 />
               </div>
 
@@ -325,7 +325,7 @@ export default function ShopPage() {
               {/* Nút Áp dụng */}
               <button
                 onClick={handleApplyFilters}
-                className="w-full bg-[#111111] text-white text-xs font-mono uppercase tracking-widest py-3 hover:bg-[#2A2A2A] transition-colors cursor-pointer"
+                className="w-full bg-[#111111] text-white text-xs font-mono uppercase tracking-widest py-3 hover:bg-[#C5A880] hover:text-[#0B0C10] transition-colors cursor-pointer"
               >
                 Áp Dụng Bộ Lọc
               </button>
@@ -342,9 +342,11 @@ export default function ShopPage() {
                   placeholder="Tìm kiếm trong danh sách này…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-3.5 py-2 pl-9 text-xs text-[#111111] focus:outline-none focus:border-[#111111] placeholder:text-[#AAAAAA]"
+                  className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-3.5 py-2 pl-9 text-xs text-[#111111] focus:outline-none focus:border-[#C5A880] placeholder:text-[#AAAAAA]"
                 />
-                <span className="absolute left-3 top-2.5 text-xs text-[#888888]">🔍</span>
+                <svg className="w-3.5 h-3.5 absolute left-3 top-3 text-[#888888]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
               </div>
 
               <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
@@ -356,7 +358,7 @@ export default function ShopPage() {
                 <select
                   value={sortKey}
                   onChange={(e) => setSortKey(e.target.value)}
-                  className="border border-[#E5E5E3] bg-[#FAFAFA] px-3 py-2 text-xs font-mono uppercase text-[#111111] focus:outline-none focus:border-[#111111] cursor-pointer"
+                  className="border border-[#E5E5E3] bg-[#FAFAFA] px-3 py-2 text-xs font-mono uppercase text-[#111111] focus:outline-none focus:border-[#C5A880] cursor-pointer"
                 >
                   {SORT_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -372,7 +374,9 @@ export default function ShopPage() {
               <LoadingSkeleton isFullWidth={!isAllProducts} />
             ) : filteredAndSorted.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center bg-white border border-dashed border-[#E5E5E3] p-8">
-                <span className="text-3xl block mb-3">🏷️</span>
+                <div className="w-10 h-10 border border-[#EAEAE8] bg-[#FBFBFA] flex items-center justify-center text-[#888888] font-serif text-lg mb-3">
+                  —
+                </div>
                 <p className="text-lg font-serif font-bold text-[#111111] mb-1">
                   Chưa có sản phẩm nào
                 </p>
@@ -384,14 +388,14 @@ export default function ShopPage() {
                 {isAllProducts ? (
                   <button
                     onClick={handleClearFilters}
-                    className="mt-5 bg-[#111111] text-white text-xs font-mono uppercase tracking-widest px-6 py-2.5 hover:bg-[#2A2A2A] transition-colors cursor-pointer"
+                    className="mt-5 bg-[#111111] text-white text-xs font-mono uppercase tracking-widest px-6 py-2.5 hover:bg-[#C5A880] hover:text-[#0B0C10] transition-colors cursor-pointer"
                   >
                     Xóa Bộ Lọc
                   </button>
                 ) : (
                   <button
                     onClick={() => handleSelectCategory(null)}
-                    className="mt-5 bg-[#111111] text-white text-xs font-mono uppercase tracking-widest px-6 py-2.5 hover:bg-[#2A2A2A] transition-colors cursor-pointer"
+                    className="mt-5 bg-[#111111] text-white text-xs font-mono uppercase tracking-widest px-6 py-2.5 hover:bg-[#C5A880] hover:text-[#0B0C10] transition-colors cursor-pointer"
                   >
                     Khám Phá Tất Cả Sản Phẩm
                   </button>

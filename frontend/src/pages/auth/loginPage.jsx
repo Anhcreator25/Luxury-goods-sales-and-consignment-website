@@ -91,7 +91,7 @@ export default function LoginPage() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="name@domain.com"
-                                className="w-full bg-[#FAFAFA] border border-[#DCDCDA] px-4 py-3.5 text-sm text-[#111111] placeholder-[#A0A09E] focus:outline-none focus:border-[#111111] focus:bg-white transition-all duration-150"
+                                className="w-full bg-[#FAFAFA] border border-[#DCDCDA] px-4 py-3.5 text-sm text-[#111111] placeholder-[#A0A09E] focus:outline-none focus:border-[#C5A880] focus:bg-white transition-all duration-150"
                             />
                         </div>
 
@@ -114,14 +114,14 @@ export default function LoginPage() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="••••••••••••"
-                                className="w-full bg-[#FAFAFA] border border-[#DCDCDA] px-4 py-3.5 text-sm text-[#111111] placeholder-[#A0A09E] focus:outline-none focus:border-[#111111] focus:bg-white transition-all duration-150"
+                                className="w-full bg-[#FAFAFA] border border-[#DCDCDA] px-4 py-3.5 text-sm text-[#111111] placeholder-[#A0A09E] focus:outline-none focus:border-[#C5A880] focus:bg-white transition-all duration-150"
                             />
                         </div>
 
                         <button
                             type="submit"
                             disabled={loading || !!successMessage}
-                            className="w-full mt-2 py-4 px-6 bg-[#111111] hover:bg-[#2A2A2A] text-white text-xs font-mono font-medium uppercase tracking-[0.2em] transition-all duration-200 cursor-pointer disabled:opacity-50"
+                            className="w-full mt-2 py-4 px-6 bg-[#111111] hover:bg-[#C5A880] hover:text-[#0B0C10] text-white text-xs font-mono font-medium uppercase tracking-[0.2em] transition-all duration-200 cursor-pointer disabled:opacity-50"
                         >
                             {loading ? "Đang xác thực..." : "Tiếp tục đăng nhập"}
                         </button>

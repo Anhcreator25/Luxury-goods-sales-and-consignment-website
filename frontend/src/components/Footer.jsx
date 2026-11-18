@@ -21,7 +21,7 @@ export default function Footer({ onCategorySelect }) {
             <p className="text-xs text-[#999999] leading-relaxed font-light pr-4">
               Nền tảng giao dịch và ký gửi hàng hiệu xa xỉ bảo chứng độc lập. Mỗi món bảo vật đều trải qua quy trình thẩm định đa tầng nghiêm ngặt trước khi lưu hành.
             </p>
-            <div className="pt-2 flex items-center gap-2 text-[10px] font-mono text-[#D4AF37] tracking-wider uppercase">
+            <div className="pt-2 flex items-center gap-2 text-[10px] font-mono text-[#C5A880] tracking-wider uppercase">
               <span>●</span>
               <span>100% Escrow Secured Vault</span>
             </div>
@@ -29,8 +29,7 @@ export default function Footer({ onCategorySelect }) {
 
           {/* Column 2: 5 Curated Categories */}
           <div>
-            <h4 className="font-mono text-white uppercase tracking-[0.2em] text-xs mb-4 font-medium flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-white/40 rounded-full"></span>
+            <h4 className="font-mono text-white uppercase tracking-[0.2em] text-xs mb-4 font-medium">
               Danh Mục Tuyển Chọn
             </h4>
             <ul className="space-y-2.5 text-xs font-light text-[#AAAAAA]">
@@ -57,8 +56,7 @@ export default function Footer({ onCategorySelect }) {
 
           {/* Column 3: Trust & Guarantees */}
           <div>
-            <h4 className="font-mono text-white uppercase tracking-[0.2em] text-xs mb-4 font-medium flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-white/40 rounded-full"></span>
+            <h4 className="font-mono text-white uppercase tracking-[0.2em] text-xs mb-4 font-medium">
               Cam Kết Bảo Chứng
             </h4>
             <ul className="space-y-2.5 text-xs font-light text-[#AAAAAA]">
@@ -83,8 +81,7 @@ export default function Footer({ onCategorySelect }) {
 
           {/* Column 4: Private Concierge & Location */}
           <div className="space-y-3">
-            <h4 className="font-mono text-white uppercase tracking-[0.2em] text-xs mb-4 font-medium flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-white/40 rounded-full"></span>
+            <h4 className="font-mono text-white uppercase tracking-[0.2em] text-xs mb-4 font-medium">
               Dịch Vụ Khách Hàng
             </h4>
             <div className="text-xs text-[#AAAAAA] space-y-2 font-light">

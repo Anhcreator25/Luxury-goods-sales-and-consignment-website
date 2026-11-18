@@ -8,10 +8,10 @@ import { PLATFORM_CONFIG } from '../../config/platformConfig'
 
 // Listing consignment approval status badges
 const STATUS_BADGE = {
-  pending:  { label: 'Đang Chờ Xét Duyệt', cls: 'bg-amber-50 text-amber-700 border border-amber-200' },
-  active:   { label: 'Đang Bán',           cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200' },
-  sold:     { label: 'Đã Bán',             cls: 'bg-gray-100 text-gray-600 border border-gray-200' },
-  rejected: { label: 'Bị Từ Chối',         cls: 'bg-red-50 text-red-700 border border-red-200' },
+  pending:  { label: 'Đang Chờ Xét Duyệt', cls: 'bg-[#FAF7F0] text-[#7A5C1E] border border-[#E8D9B8]' },
+  active:   { label: 'Đang Bán',           cls: 'bg-[#F0F5F0] text-[#2D5A2D] border border-[#C4D9C4]' },
+  sold:     { label: 'Đã Bán',             cls: 'bg-[#F4F4F2] text-[#777777] border border-[#E0E0DE]' },
+  rejected: { label: 'Bị Từ Chối',         cls: 'bg-[#FAF0F0] text-[#8A2222] border border-[#E8C8C8]' },
 }
 
 const CATEGORIES = [
@@ -483,7 +483,7 @@ export default function MyProductsPage() {
                   onChange={handleFormChange}
                   required
                   placeholder="Ví dụ: Chanel Classic Flap Bag Medium"
-                  className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#111111] transition-colors duration-150"
+                  className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#C5A880] transition-colors duration-150"
                 />
               </div>
 
@@ -506,7 +506,7 @@ export default function MyProductsPage() {
                         brand: found && found.id ? found.label : (selId === null ? '' : prev.brand)
                       }))
                     }}
-                    className="border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] focus:outline-none focus:border-[#111111] transition-colors duration-150 appearance-none"
+                    className="border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] focus:outline-none focus:border-[#C5A880] transition-colors duration-150 appearance-none"
                   >
                     {brandList.map(b => (
                       <option key={String(b.id)} value={b.id || ''}>{b.label}</option>
@@ -519,7 +519,7 @@ export default function MyProductsPage() {
                     onChange={handleFormChange}
                     required
                     placeholder="Gõ tên thương hiệu (vd: Patek Philippe, Rolex, Prada...)"
-                    className="border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#111111] transition-colors duration-150 font-medium"
+                    className="border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#C5A880] transition-colors duration-150 font-medium"
                   />
                 </div>
               </div>
@@ -536,7 +536,7 @@ export default function MyProductsPage() {
                   required
                   rows={4}
                   placeholder="Mô tả tình trạng, xuất xứ, phụ kiện đi kèm..."
-                  className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#111111] transition-colors duration-150 resize-none"
+                  className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#C5A880] transition-colors duration-150 resize-none"
                 />
               </div>
 
@@ -554,7 +554,7 @@ export default function MyProductsPage() {
                     required
                     min={0}
                     placeholder="Ví dụ: 25000000"
-                    className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#111111] transition-colors duration-150"
+                    className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#C5A880] transition-colors duration-150"
                   />
                   {form.price && Number(form.price) > 0 && (
                     <div className="mt-2 p-2.5 bg-[#F9F9F8] border border-[#E5E5E3] space-y-1 text-xs font-mono">
@@ -580,7 +580,7 @@ export default function MyProductsPage() {
                     onChange={handleFormChange}
                     min={0}
                     placeholder="Để trống = bằng giá bán"
-                    className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#111111] transition-colors duration-150"
+                    className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#C5A880] transition-colors duration-150"
                   />
                 </div>
               </div>
@@ -595,7 +595,7 @@ export default function MyProductsPage() {
                     name="category_id"
                     value={form.category_id}
                     onChange={handleFormChange}
-                    className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] focus:outline-none focus:border-[#111111] transition-colors duration-150 appearance-none"
+                    className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] focus:outline-none focus:border-[#C5A880] transition-colors duration-150 appearance-none"
                   >
                     {CATEGORIES.map(c => (
                       <option key={c.id} value={c.id}>{c.label}</option>
@@ -610,7 +610,7 @@ export default function MyProductsPage() {
                     name="condition_grade"
                     value={form.condition_grade}
                     onChange={handleFormChange}
-                    className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] focus:outline-none focus:border-[#111111] transition-colors duration-150 appearance-none"
+                    className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] focus:outline-none focus:border-[#C5A880] transition-colors duration-150 appearance-none"
                   >
                     {CONDITIONS.map(c => (
                       <option key={c.value} value={c.value}>{c.label}</option>
@@ -646,7 +646,7 @@ export default function MyProductsPage() {
                           setForm(prev => ({ ...prev, imageUrls: updated }))
                         }}
                         placeholder={idx === 0 ? 'Ảnh chính — https://...' : `Ảnh phụ ${idx + 1} — https://...`}
-                        className="flex-1 border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#111111] transition-colors duration-150"
+                        className="flex-1 border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#C5A880] transition-colors duration-150"
                       />
                       {/* Remove button — keep at least 1 row */}
                       {form.imageUrls.length > 1 && (
