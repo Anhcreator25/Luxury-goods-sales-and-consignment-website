@@ -1,5 +1,5 @@
 import React from "react";
-import { formatPrice, formatConditionGrade } from "../utils/formatters";
+import { formatPrice, formatConditionShort } from "../utils/formatters";
 
 export default function ProductCard({ product, onSelect, onDetail }) {
   const imageUrl = product.primary_image || 
@@ -26,17 +26,17 @@ export default function ProductCard({ product, onSelect, onDetail }) {
           }}
         />
 
-        {/* Delicate Frosted Glass Condition Badge */}
-        {product.condition_grade && (
-          <div className="absolute top-3 left-3 bg-white/85 backdrop-blur-md border border-[#EAEAE8] text-[#222222] text-[9px] font-mono uppercase tracking-[0.18em] px-2.5 py-1 shadow-sm">
-            {formatConditionGrade(product.condition_grade)}
-          </div>
-        )}
-
-        {/* Verification Check Badge */}
-        <div className="absolute top-3 right-3 bg-white/85 backdrop-blur-md border border-[#EAEAE8] text-[#555555] text-[9px] font-mono tracking-widest px-2 py-1 shadow-sm">
+        {/* Verification Check Badge (Top Right) */}
+        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md border border-[#EAEAE8] text-[#333333] text-[9px] font-mono tracking-widest px-2 py-0.5 shadow-sm">
           ✓ Verified
         </div>
+
+        {/* Delicate Frosted Glass Condition Badge (Bottom Left, Non-overlapping) */}
+        {product.condition_grade && (
+          <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md border border-[#EAEAE8] text-[#222222] text-[9px] font-mono uppercase tracking-[0.15em] px-2 py-0.5 shadow-sm font-medium">
+            {formatConditionShort(product.condition_grade)}
+          </div>
+        )}
       </div>
 
       {/* Info Section */}

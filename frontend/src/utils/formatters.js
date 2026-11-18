@@ -51,6 +51,28 @@ export const formatConditionGrade = (grade) => {
   return str;
 };
 
+/**
+ * Định dạng tình trạng ngắn gọn, tinh tế cho thẻ sản phẩm (tránh tràn khung)
+ */
+export const formatConditionShort = (grade) => {
+  if (!grade) return 'Đã Thẩm Định';
+  const upper = String(grade).trim().toUpperCase();
+
+  if (upper.includes('100%') || upper.includes('UNWORN') || upper.includes('PRISTINE') || upper.includes('BRAND NEW') || upper.includes('MỚI 100%')) {
+    return 'Mới 100%';
+  }
+  if (upper.includes('LIKE NEW') || upper.includes('99%') || upper.includes('98%') || upper.includes('NHƯ MỚI')) {
+    return 'Như mới';
+  }
+  if (upper.includes('EXCELLENT') || upper.includes('VERY GOOD') || upper.includes('GOOD') || upper.includes('95%') || upper.includes('90%') || upper.includes('XUẤT SẮC') || upper.includes('RẤT TỐT')) {
+    return 'Đã sử dụng';
+  }
+  if (upper.includes('FAIR') || upper.includes('LIGHTLY USED') || upper.includes('USED') || upper.includes('80%') || upper.includes('70%') || upper.includes('KHÁ')) {
+    return 'Đã qua sử dụng';
+  }
+  return grade;
+};
+
 export const CONDITION_MAP = {
   UNWORN: { label: "Chưa qua sử dụng (Mới 100%)", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   PRISTINE: { label: "Chưa qua sử dụng (Mới 100%)", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
