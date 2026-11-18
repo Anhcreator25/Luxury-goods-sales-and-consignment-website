@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { userServices } from '../../../services'
+import ConfirmModal from '../../../components/ConfirmModal'
 
 // Common Vietnamese banks list with codes
 export const VIETNAMESE_BANKS = [
@@ -23,6 +24,8 @@ export default function BankAccountsSection() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [deletingId, setDeletingId] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Form state
   const [form, setForm] = useState({
@@ -104,17 +107,24 @@ export default function BankAccountsSection() {
     }
   }
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa liên kết tài khoản ngân hàng này?')) return
+  const handleDelete = (id) => {
+    setDeletingId(id)
+  }
 
+  const handleConfirmDelete = async () => {
+    if (!deletingId) return
+    setIsDeleting(true)
     try {
       setError('')
-      await userServices.deleteBankAccount(id)
+      await userServices.deleteBankAccount(deletingId)
       setSuccess('Đã xóa tài khoản ngân hàng thành công!')
+      setDeletingId(null)
       await fetchBankAccounts()
       setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
       setError(err?.response?.data?.message || 'Không thể xóa tài khoản ngân hàng.')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -295,6 +305,18 @@ export default function BankAccountsSection() {
           </div>
         </form>
       </div>
+
+      <ConfirmModal
+        isOpen={Boolean(deletingId)}
+        title="XÓA TÀI KHOẢN NGÂN HÀNG"
+        message="Bạn có chắc chắn muốn xóa liên kết tài khoản ngân hàng này?\n\nSau khi xóa, tài khoản này sẽ không thể dùng để nhận tiền bán hàng được giải ngân từ Quỹ Ký Quỹ."
+        confirmLabel="XÓA TÀI KHOẢN"
+        cancelLabel="QUAY LẠI"
+        variant="danger"
+        isLoading={isDeleting}
+        onConfirm={handleConfirmDelete}
+        onClose={() => !isDeleting && setDeletingId(null)}
+      />
     </div>
   )
 }

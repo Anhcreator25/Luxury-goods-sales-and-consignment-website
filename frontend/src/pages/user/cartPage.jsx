@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
+import ConfirmModal from '../../components/ConfirmModal';
 import { cartServices, orderServices } from '../../services';
 import { authStorage } from '../../utils/authStorage';
 
@@ -45,6 +46,7 @@ export default function CartPage() {
   const [submitting, setSubmitting] = useState(false);
   const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [cancellingPayment, setCancellingPayment] = useState(false);
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [paymentPaid, setPaymentPaid] = useState(false);
   const [orderCancelled, setOrderCancelled] = useState(false);
   const [copiedField, setCopiedField] = useState('');
@@ -176,15 +178,18 @@ export default function CartPage() {
     }
   };
 
-  const handleCancelThisOrder = async () => {
+  const handleCancelThisOrder = () => {
     if (!orderId) return;
-    const confirmed = window.confirm('Bạn có chắc muốn hủy đơn hàng này không? Sản phẩm sẽ được nhả lại trên sàn.');
-    if (!confirmed) return;
+    setConfirmCancelOpen(true);
+  };
 
+  const handleConfirmCancelOrder = async () => {
+    if (!orderId) return;
     setCancellingPayment(true);
     setError('');
     try {
       await orderServices.cancelOrder(orderId);
+      setConfirmCancelOpen(false);
       setOrderCancelled(true);
     } catch (err) {
       setError(err?.response?.data?.message || 'Không thể hủy đơn hàng này.');
@@ -311,6 +316,17 @@ export default function CartPage() {
             />
           </div>
         </div>
+        <ConfirmModal
+          isOpen={confirmCancelOpen}
+          title="HỦY ĐƠN HÀNG"
+          message={'Bạn có chắc muốn hủy đơn hàng này không?\n\nSau khi hủy, sản phẩm sẽ được nhả lại trên sàn để người mua khác có thể tiếp cận.'}
+          confirmLabel="HỦY ĐƠN NÀY"
+          cancelLabel="QUAY LẠI"
+          variant="danger"
+          isLoading={cancellingPayment}
+          onConfirm={handleConfirmCancelOrder}
+          onClose={() => !cancellingPayment && setConfirmCancelOpen(false)}
+        />
         <Footer />
       </>
     );

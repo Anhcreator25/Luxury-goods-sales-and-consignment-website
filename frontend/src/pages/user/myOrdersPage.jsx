@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
+import ConfirmModal from '../../components/ConfirmModal'
 import { orderServices, offerServices, cartServices } from '../../services'
 import { formatPrice } from '../../utils/formatters'
 import OrderCard from './components/orders/OrderCard'
@@ -75,6 +76,17 @@ export default function MyOrdersPage() {
   const [cancellingId, setCancellingId] = useState(null)
   const [confirmingId, setConfirmingId] = useState(null)
 
+  // Custom Confirmation Dialog Modal state
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmLabel: 'Xác Nhận',
+    variant: 'primary',
+    onConfirm: () => {},
+    isLoading: false,
+  })
+
   // Redirect to login or admin based on session
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -140,49 +152,67 @@ export default function MyOrdersPage() {
   }
 
   // Cancel an unpaid pending order
-  const handleCancelOrder = async (orderId) => {
-    const confirmCancel = window.confirm('Bạn có chắc chắn muốn hủy đơn hàng này không? Sản phẩm sẽ được mở lại để người khác có thể mua.')
-    if (!confirmCancel) return
-
-    setCancellingId(orderId)
-    setError('')
-    setSuccessMsg('')
-    try {
-      const res = await orderServices.cancelOrder(orderId)
-      setSuccessMsg(res.data?.message || 'Đã hủy đơn hàng thành công.')
-      setTimeout(() => setSuccessMsg(''), 4000)
-      if (payOrder && (payOrder.id === orderId || payOrder.order_id === orderId)) {
-        setPayOrder(null)
-      }
-      fetchOrders()
-    } catch (err) {
-      setError(err?.response?.data?.message || 'Không thể hủy đơn hàng này. Vui lòng thử lại.')
-    } finally {
-      setCancellingId(null)
-    }
+  const handleCancelOrder = (orderId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Hủy Đơn Hàng',
+      message: 'Bạn có chắc chắn muốn hủy đơn hàng này không?\n\nSau khi hủy, đơn hàng sẽ không thể khôi phục và sản phẩm sẽ được mở lại để người mua khác có thể tiếp cận.',
+      confirmLabel: 'Hủy Đơn Hàng',
+      variant: 'danger',
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isLoading: true }))
+        setCancellingId(orderId)
+        setError('')
+        setSuccessMsg('')
+        try {
+          const res = await orderServices.cancelOrder(orderId)
+          setSuccessMsg(res.data?.message || 'Đã hủy đơn hàng thành công.')
+          setTimeout(() => setSuccessMsg(''), 4000)
+          if (payOrder && (payOrder.id === orderId || payOrder.order_id === orderId)) {
+            setPayOrder(null)
+          }
+          setConfirmModal((prev) => ({ ...prev, isOpen: false, isLoading: false }))
+          fetchOrders()
+        } catch (err) {
+          setError(err?.response?.data?.message || 'Không thể hủy đơn hàng này. Vui lòng thử lại.')
+          setConfirmModal((prev) => ({ ...prev, isLoading: false }))
+        } finally {
+          setCancellingId(null)
+        }
+      },
+    })
   }
 
   // Buyer confirms delivery receipt to complete order
-  const handleConfirmReceipt = async (orderId) => {
-    const confirmDone = window.confirm(
-      'Bạn xác nhận đã nhận được đầy đủ sản phẩm và đồng ý hoàn tất đơn hàng?\n\nSau khi xác nhận, đơn hàng sẽ chuyển sang trạng thái Hoàn Thành và tiền mua hàng sẽ được mở khóa để giải ngân cho Người bán.'
-    )
-    if (!confirmDone) return
-
-    setConfirmingId(orderId)
-    setError('')
-    setSuccessMsg('')
-    try {
-      const res = await orderServices.confirmReceipt(orderId)
-      setSuccessMsg(res.data?.message || 'Đã xác nhận nhận hàng thành công! Đơn hàng hoàn tất.')
-      setTimeout(() => setSuccessMsg(''), 5000)
-      await fetchOrders()
-      setActiveTab('completed')
-    } catch (err) {
-      setError(err?.response?.data?.message || 'Có lỗi xảy ra khi xác nhận nhận hàng.')
-    } finally {
-      setConfirmingId(null)
-    }
+  const handleConfirmReceipt = (orderId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Xác Nhận Đã Nhận Hàng',
+      message: 'Bạn xác nhận đã nhận được đầy đủ sản phẩm và đồng ý hoàn tất đơn hàng?\n\nSau khi xác nhận, đơn hàng sẽ chuyển sang trạng thái Hoàn Thành và tiền mua hàng sẽ được mở khóa từ hệ thống ký quỹ để giải ngân cho Người bán.',
+      confirmLabel: 'Đã Nhận & Hoàn Tất',
+      variant: 'success',
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isLoading: true }))
+        setConfirmingId(orderId)
+        setError('')
+        setSuccessMsg('')
+        try {
+          const res = await orderServices.confirmReceipt(orderId)
+          setSuccessMsg(res.data?.message || 'Đã xác nhận nhận hàng thành công! Đơn hàng hoàn tất.')
+          setTimeout(() => setSuccessMsg(''), 5000)
+          setConfirmModal((prev) => ({ ...prev, isOpen: false, isLoading: false }))
+          await fetchOrders()
+          setActiveTab('completed')
+        } catch (err) {
+          setError(err?.response?.data?.message || 'Có lỗi xảy ra khi xác nhận nhận hàng.')
+          setConfirmModal((prev) => ({ ...prev, isLoading: false }))
+        } finally {
+          setConfirmingId(null)
+        }
+      },
+    })
   }
 
   // Filter orders according to selected tab
@@ -456,6 +486,22 @@ export default function MyOrdersPage() {
         onConfirmPay={handleConfirmPay}
         cancellingId={cancellingId}
         confirmingPayment={confirmingPayment}
+      />
+
+      {/* Reusable Luxury Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel={confirmModal.confirmLabel}
+        variant={confirmModal.variant}
+        isLoading={confirmModal.isLoading}
+        onConfirm={confirmModal.onConfirm}
+        onClose={() => {
+          if (!confirmModal.isLoading) {
+            setConfirmModal((prev) => ({ ...prev, isOpen: false }))
+          }
+        }}
       />
 
       {/* Global Footer */}
