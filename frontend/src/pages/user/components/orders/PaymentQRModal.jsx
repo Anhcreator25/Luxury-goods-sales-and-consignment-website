@@ -12,10 +12,10 @@ export default function PaymentQRModal({
 }) {
   if (!order) return null
 
-  const envBankCode = import.meta.env.VITE_PLATFORM_BANK_CODE || 'MB'
-  const envBankAccount = import.meta.env.VITE_PLATFORM_BANK_ACCOUNT || '0822173222'
-  const envBankName = import.meta.env.VITE_PLATFORM_BANK_NAME || 'MBBank (Quân Đội)'
-  const envAccountName = import.meta.env.VITE_PLATFORM_BANK_HOLDER || 'LUXURY PLATFORM'
+  const envBankCode = import.meta.env.VITE_PLATFORM_BANK_CODE
+  const envBankAccount = import.meta.env.VITE_PLATFORM_BANK_ACCOUNT
+  const envBankName = import.meta.env.VITE_PLATFORM_BANK_NAME
+  const envAccountName = import.meta.env.VITE_PLATFORM_BANK_HOLDER
   const amount = Math.round(order.total_amount || order.total_price || 0)
   const oid = order.id || order.order_id
   const qrUrl = `https://img.vietqr.io/image/${envBankCode}-${envBankAccount}-compact2.png?amount=${amount}&addInfo=DH${oid}&accountName=${encodeURIComponent(envAccountName)}`
