@@ -1,57 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import ProductCard from '../../components/ProductCard';
 import Footer from '../../components/Footer';
+import ShopSidebar from '../../components/shop/ShopSidebar';
+import ShopToolbar from '../../components/shop/ShopToolbar';
+import ShopSkeleton from '../../components/shop/ShopSkeleton';
+import ShopEmptyState from '../../components/shop/ShopEmptyState';
 import { listingServices } from '../../services';
-import { formatConditionGrade } from '../../utils/formatters';
-
-// ---------------------------------------------------------------------------
-// Category map: display name → API category_id (Khớp chuẩn Database MySQL)
-// ---------------------------------------------------------------------------
-const CATEGORIES = [
-  { label: 'Tất Cả Sản Phẩm', id: null, desc: 'Toàn bộ các tác phẩm xa xỉ đã qua kiểm định nghiêm ngặt từ các thương hiệu hàng đầu thế giới.' },
-  { label: 'Túi Xách Thượng Lưu', id: 1, desc: 'Những kiệt tác túi xách kinh điển từ Hermès Birkin, Chanel Classic Flap, Louis Vuitton, Dior.' },
-  { label: 'Sneaker & Giày Hiệu', id: 2, desc: 'Bộ sưu tập giày hiếm, phiên bản giới hạn chính hãng Jordan, Dior, Nike x Travis Scott.' },
-  { label: 'Đồng Hồ Xa Xỉ', id: 3, desc: 'Cỗ máy thời gian đỉnh cao của Rolex, Patek Philippe, Audemars Piguet, Cartier nguyên bản.' },
-  { label: 'Thời Trang Đường Phố', id: 4, desc: 'Các thiết kế Streetwear xa xỉ, phong cách thời thượng từ Off-White, Supreme, Balenciaga.' },
-  { label: 'Trang Sức & Phụ Kiện', id: 5, desc: 'Tinh hoa trang sức kim cương, vàng khối từ Cartier, Van Cleef & Arpels, Bvlgari.' },
-];
-
-// ---------------------------------------------------------------------------
-// 4 Cấp độ Tình Trạng Chuẩn Quốc Tế Chrono24
-// ---------------------------------------------------------------------------
-const CONDITIONS = [
-  { value: 'UNWORN',    label: 'Chưa qua sử dụng (Mới 100%)', keywords: ['unworn', 'brand new', 'pristine', '100%'] },
-  { value: 'VERY_GOOD', label: 'Rất tốt (Như mới)',           keywords: ['very_good', 'very good', 'like new', '99%', '98%'] },
-  { value: 'GOOD',      label: 'Tốt (Đã sử dụng)',            keywords: ['good', 'excellent', '97%', '95%', '90%'] },
-  { value: 'FAIR',      label: 'Khá (Dấu vết thời gian)',     keywords: ['fair', 'used', '70%', '80%', '85%'] }
-];
-
-const SORT_OPTIONS = [
-  { value: 'newest', label: 'Mới nhất' },
-  { value: 'price_asc', label: 'Giá tăng dần' },
-  { value: 'price_desc', label: 'Giá giảm dần' },
-];
+import { CATEGORIES, CONDITIONS } from '../../constants/shopConstants';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-const POPULAR_BRANDS = ['Rolex', 'Hermès', 'Chanel', 'Patek Philippe', 'Louis Vuitton', 'Cartier', 'Dior'];
-
-const PRICE_SHORTCUTS = [
-  { label: 'Dưới 10 Triệu', min: '', max: '10000000' },
-  { label: '10Tr - 50Tr', min: '10000000', max: '50000000' },
-  { label: '50Tr - 200Tr', min: '50000000', max: '200000000' },
-  { label: 'Trên 200 Triệu', min: '200000000', max: '' },
-];
 function sortProducts(products, sortKey) {
   const copy = [...products];
   if (sortKey === 'price_asc') {
-    return copy.sort((a, b) => (a.selling_price || a.price || 0) - (b.selling_price || b.price || 0));
+    return copy.sort((a, b) => (Number(a.selling_price ?? a.price ?? 0)) - (Number(b.selling_price ?? b.price ?? 0)));
   }
   if (sortKey === 'price_desc') {
-    return copy.sort((a, b) => (b.selling_price || b.price || 0) - (a.selling_price || a.price || 0));
+    return copy.sort((a, b) => (Number(b.selling_price ?? b.price ?? 0)) - (Number(a.selling_price ?? a.price ?? 0)));
   }
   return copy.sort((a, b) => (b.id || 0) - (a.id || 0));
 }
@@ -63,7 +31,6 @@ function applyLocalFilters(products, { minPrice, maxPrice, conditions, brand }) 
     if (maxPrice !== '' && itemPrice > Number(maxPrice)) return false;
     if (conditions.length > 0) {
       const pCond = String(p.condition_grade || '').toLowerCase();
-      // So khớp với các nhóm điều kiện chuẩn Chrono24
       const matched = conditions.some((cVal) => {
         const condObj = CONDITIONS.find((c) => c.value === cVal);
         if (condObj) {
@@ -81,16 +48,6 @@ function applyLocalFilters(products, { minPrice, maxPrice, conditions, brand }) 
   });
 }
 
-function LoadingSkeleton({ isFullWidth }) {
-  return (
-    <div className={`grid gap-5 ${isFullWidth ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' : 'grid-cols-2 lg:grid-cols-3'}`}>
-      {Array.from({ length: isFullWidth ? 8 : 6 }).map((_, i) => (
-        <div key={i} className="animate-pulse bg-[#F2F2F0] border border-[#E5E5E3] h-80 w-full" />
-      ))}
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
@@ -98,82 +55,116 @@ export default function ShopPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Đọc category_id từ URL query string
+  // Đọc params từ URL
   const categoryParam = searchParams.get('category_id');
   const selectedCategory = categoryParam ? Number(categoryParam) : null;
-
-  // Lấy thông tin danh mục hiện hành
   const currentCategoryObj = CATEGORIES.find((c) => c.id === selectedCategory) || CATEGORIES[0];
-  const isAllProducts = selectedCategory === null; // True = xem tất cả sản phẩm (Có bộ lọc)
+  const isAllProducts = selectedCategory === null;
 
-  // Filter state (chỉ dùng cho chế độ Tất cả sản phẩm)
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
-  const [selectedConditions, setSelectedConditions] = useState([]);
-  const [brandInput, setBrandInput] = useState('');
+  // URL state defaults
+  const urlMinPrice = searchParams.get('min_price') || '';
+  const urlMaxPrice = searchParams.get('max_price') || '';
+  const urlBrand = searchParams.get('brand') || '';
+  const urlConditions = searchParams.get('conditions') ? searchParams.get('conditions').split(',').filter(Boolean) : [];
+  const urlSort = searchParams.get('sort') || 'newest';
+  const urlSearch = searchParams.get('q') || '';
 
-  const [pendingBrand, setPendingBrand] = useState('');
-  const [pendingMinPrice, setPendingMinPrice] = useState('');
-  const [pendingMaxPrice, setPendingMaxPrice] = useState('');
-  const [pendingConditions, setPendingConditions] = useState([]);
+  // Filter state (Applied)
+  const [minPrice, setMinPrice] = useState(urlMinPrice);
+  const [maxPrice, setMaxPrice] = useState(urlMaxPrice);
+  const [selectedConditions, setSelectedConditions] = useState(urlConditions);
+  const [brandInput, setBrandInput] = useState(urlBrand);
 
-  // Grid state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortKey, setSortKey] = useState('newest');
+  // Filter state (Pending trong Sidebar)
+  const [pendingMinPrice, setPendingMinPrice] = useState(urlMinPrice);
+  const [pendingMaxPrice, setPendingMaxPrice] = useState(urlMaxPrice);
+  const [pendingConditions, setPendingConditions] = useState(urlConditions);
+  const [pendingBrand, setPendingBrand] = useState(urlBrand);
+
+  // Search, Sort & Products state
+  const [searchInput, setSearchInput] = useState(urlSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState(urlSearch);
+  const [sortKey, setSortKey] = useState(urlSort);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ---------------------------------------------------------------------------
-  // Fetch products from API
-  // ---------------------------------------------------------------------------
-  const fetchProducts = async (catId, titleQuery) => {
-    setLoading(true);
-    try {
-      const params = { status: 'active', limit: 30 };
-      if (catId !== null) params.category_id = catId;
-      if (titleQuery && titleQuery.trim() !== '') params.title = titleQuery.trim();
-
-      const res = await listingServices.getListings(params);
-      const data = res.data?.data || res.data || [];
-      setProducts(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Lỗi khi tải sản phẩm:', err);
-      setProducts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Debounce search input (400ms)
   useEffect(() => {
-    fetchProducts(selectedCategory, searchQuery);
-  }, [selectedCategory, searchQuery]);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
-  // Derived / filtered products
-  const filteredAndSorted = sortProducts(
-    applyLocalFilters(products, {
-      minPrice: isAllProducts ? minPrice : '',
-      maxPrice: isAllProducts ? maxPrice : '',
-      conditions: isAllProducts ? selectedConditions : [],
-      brand: isAllProducts ? brandInput : '',
-    }),
-    sortKey
-  );
+  // Cập nhật URLSearchParams mỗi khi Applied Filters hoặc Sort, Category, Search thay đổi
+  useEffect(() => {
+    const nextParams = {};
+    if (selectedCategory !== null) nextParams.category_id = selectedCategory;
+    if (minPrice) nextParams.min_price = minPrice;
+    if (maxPrice) nextParams.max_price = maxPrice;
+    if (brandInput) nextParams.brand = brandInput;
+    if (selectedConditions.length > 0) nextParams.conditions = selectedConditions.join(',');
+    if (sortKey !== 'newest') nextParams.sort = sortKey;
+    if (debouncedSearch.trim()) nextParams.q = debouncedSearch.trim();
+
+    setSearchParams(nextParams, { replace: true });
+  }, [selectedCategory, minPrice, maxPrice, brandInput, selectedConditions, sortKey, debouncedSearch, setSearchParams]);
+
+  // Fetch products from API khi Category hoặc Debounced Search thay đổi
+  useEffect(() => {
+    let isMounted = true;
+    const fetchProducts = async () => {
+      setLoading(true);
+      try {
+        const params = { status: 'active', limit: 50 };
+        if (selectedCategory !== null) params.category_id = selectedCategory;
+        if (debouncedSearch && debouncedSearch.trim() !== '') params.title = debouncedSearch.trim();
+
+        const res = await listingServices.getListings(params);
+        const data = res.data?.data || res.data || [];
+        if (isMounted) {
+          setProducts(Array.isArray(data) ? data : []);
+        }
+      } catch (err) {
+        console.error('Lỗi khi tải sản phẩm:', err);
+        if (isMounted) setProducts([]);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    fetchProducts();
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedCategory, debouncedSearch]);
+
+  // Tối ưu hoá lọc & sắp xếp với useMemo
+  const filteredAndSorted = useMemo(() => {
+    const filtered = applyLocalFilters(products, {
+      minPrice,
+      maxPrice,
+      conditions: selectedConditions,
+      brand: brandInput,
+    });
+    return sortProducts(filtered, sortKey);
+  }, [products, minPrice, maxPrice, selectedConditions, brandInput, sortKey]);
 
   // Handlers
-  function handleConditionToggle(cond) {
+  const handleConditionToggle = (cond) => {
     setPendingConditions((prev) =>
       prev.includes(cond) ? prev.filter((c) => c !== cond) : [...prev, cond]
     );
-  }
+  };
 
-  function handleApplyFilters() {
+  const handleApplyFilters = () => {
     setMinPrice(pendingMinPrice);
     setMaxPrice(pendingMaxPrice);
     setSelectedConditions(pendingConditions);
     setBrandInput(pendingBrand);
-  }
+  };
 
-  function handleClearFilters() {
+  const handleClearFilters = () => {
     setMinPrice('');
     setMaxPrice('');
     setSelectedConditions([]);
@@ -182,22 +173,19 @@ export default function ShopPage() {
     setPendingMaxPrice('');
     setPendingConditions([]);
     setPendingBrand('');
-    setSearchQuery('');
+    setSearchInput('');
+    setDebouncedSearch('');
     setSortKey('newest');
-  }
+  };
 
-  function handleSelectCategory(catId) {
+  const handleSelectCategory = (catId) => {
     handleClearFilters();
     if (catId === null) {
       setSearchParams({});
     } else {
       setSearchParams({ category_id: catId });
     }
-  }
-
-  function handleProductDetail(product) {
-    navigate(`/product/${product.id}`);
-  }
+  };
 
   return (
     <div className="min-h-screen bg-[#FBFBFA] text-[#111111]">
@@ -215,8 +203,9 @@ export default function ShopPage() {
               ) : (
                 <>
                   <button
+                    type="button"
                     onClick={() => handleSelectCategory(null)}
-                    className="hover:text-[#111111] underline underline-offset-2"
+                    className="hover:text-[#111111] underline underline-offset-2 cursor-pointer"
                   >
                     Bộ Sưu Tập
                   </button>
@@ -234,9 +223,9 @@ export default function ShopPage() {
             </p>
           </div>
 
-          {/* Action nút quay lại tất cả sản phẩm khi đang ở trang danh mục con */}
           {!isAllProducts && (
             <button
+              type="button"
               onClick={() => handleSelectCategory(null)}
               className="inline-flex items-center gap-2 px-4 py-2.5 border border-[#111111] bg-white text-[#111111] text-xs font-mono uppercase tracking-wider hover:bg-[#111111] hover:text-white transition-colors cursor-pointer self-start md:self-auto"
             >
@@ -250,222 +239,57 @@ export default function ShopPage() {
       {/* ── Content Layout ───────────────────────────────────────────── */}
       <div className="max-w-[1440px] mx-auto px-6 sm:px-10 py-8">
         <div className="flex flex-col lg:flex-row gap-8 items-start">
+          {/* ════ LEFT SIDEBAR ════ */}
+          <ShopSidebar
+            pendingMinPrice={pendingMinPrice}
+            setPendingMinPrice={setPendingMinPrice}
+            pendingMaxPrice={pendingMaxPrice}
+            setPendingMaxPrice={setPendingMaxPrice}
+            pendingBrand={pendingBrand}
+            setPendingBrand={setPendingBrand}
+            pendingConditions={pendingConditions}
+            onConditionToggle={handleConditionToggle}
+            onApplyFilters={handleApplyFilters}
+            onClearFilters={handleClearFilters}
+          />
 
-          {/* ════ LEFT SIDEBAR: BỘ LỌC ĐA TIÊU CHÍ (HOẠT ĐỘNG TOÀN DIỆN) ════ */}
-          <aside className="w-full lg:w-[280px] flex-shrink-0 bg-white border border-[#E5E5E3] p-6 sticky top-24 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
-            {/* Header sidebar */}
-            <div className="flex items-center justify-between pb-4 border-b border-[#E5E5E3] mb-5">
-              <span className="text-xs font-mono uppercase tracking-widest text-[#111111] font-bold">
-                BỘ LỌC ĐA TIÊU CHÍ
-              </span>
-              <button
-                onClick={handleClearFilters}
-                className="text-[11px] font-mono text-[#888888] hover:text-[#D93838] transition-colors cursor-pointer"
-              >
-                Xóa lọc
-              </button>
-            </div>
-
-            {/* Lọc Phân khúc giá nhanh */}
-            <div className="mb-6">
-              <p className="text-xs font-mono uppercase tracking-wider text-[#444444] border-b border-[#F0F0EE] pb-2 mb-3 font-semibold">
-                Phân Khúc Giá (₫)
-              </p>
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                {PRICE_SHORTCUTS.map((sc) => {
-                  const isSelected = pendingMinPrice === sc.min && pendingMaxPrice === sc.max;
-                  return (
-                    <button
-                      key={sc.label}
-                      type="button"
-                      onClick={() => {
-                        if (isSelected) {
-                          setPendingMinPrice('');
-                          setPendingMaxPrice('');
-                        } else {
-                          setPendingMinPrice(sc.min);
-                          setPendingMaxPrice(sc.max);
-                        }
-                      }}
-                      className={`px-2 py-1.5 text-[10px] font-mono border transition-all cursor-pointer ${
-                        isSelected
-                          ? 'border-[#111111] bg-[#111111] text-white'
-                          : 'border-[#EAEAE8] bg-[#FAFAFA] text-[#666666] hover:border-[#111111] hover:text-[#111111]'
-                      }`}
-                    >
-                      {sc.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="space-y-2">
-                <input
-                  type="number"
-                  placeholder="Giá từ..."
-                  value={pendingMinPrice}
-                  onChange={(e) => setPendingMinPrice(e.target.value)}
-                  className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-3 py-2 text-xs text-[#111111] focus:outline-none focus:border-[#C5A880]"
-                />
-                <input
-                  type="number"
-                  placeholder="Giá đến..."
-                  value={pendingMaxPrice}
-                  onChange={(e) => setPendingMaxPrice(e.target.value)}
-                  className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-3 py-2 text-xs text-[#111111] focus:outline-none focus:border-[#C5A880]"
-                />
-              </div>
-            </div>
-
-            {/* Lọc Thương hiệu */}
-            <div className="mb-6">
-              <p className="text-xs font-mono uppercase tracking-wider text-[#444444] border-b border-[#F0F0EE] pb-2 mb-3 font-semibold">
-                Thương Hiệu
-              </p>
-              <div className="flex flex-wrap gap-1.5 mb-2.5">
-                {POPULAR_BRANDS.map((b) => (
-                  <button
-                    key={b}
-                    type="button"
-                    onClick={() => setPendingBrand(pendingBrand === b ? '' : b)}
-                    className={`px-2 py-1 text-[9px] font-mono uppercase tracking-wider border transition-colors cursor-pointer ${
-                      pendingBrand.toLowerCase() === b.toLowerCase()
-                        ? 'bg-[#111111] text-white border-[#111111]'
-                        : 'bg-[#FAFAFA] text-[#666666] border-[#EAEAE8] hover:border-[#111111]'
-                    }`}
-                  >
-                    {b}
-                  </button>
-                ))}
-              </div>
-              <input
-                type="text"
-                placeholder="Hoặc nhập tên hiệu khác…"
-                value={pendingBrand}
-                onChange={(e) => setPendingBrand(e.target.value)}
-                className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-3 py-2 text-xs text-[#111111] focus:outline-none focus:border-[#C5A880] placeholder:text-[#AAAAAA]"
-              />
-            </div>
-
-            {/* Lọc Tình trạng */}
-            <div className="mb-6">
-              <p className="text-xs font-mono uppercase tracking-wider text-[#444444] border-b border-[#F0F0EE] pb-2 mb-3 font-semibold">
-                Tình Trạng
-              </p>
-              <div className="space-y-2.5">
-                {CONDITIONS.map((cond) => {
-                  const condValue = typeof cond === 'object' ? cond.value : cond;
-                  const condLabel = typeof cond === 'object' ? cond.label : formatConditionGrade(cond);
-                  return (
-                    <label key={condValue} className="flex items-center gap-2.5 cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        checked={pendingConditions.includes(condValue)}
-                        onChange={() => handleConditionToggle(condValue)}
-                        className="accent-[#111111]"
-                      />
-                      <span className="text-xs text-[#555555] group-hover:text-[#111111] transition-colors">
-                        {condLabel}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Nút Áp dụng */}
-            <button
-              onClick={handleApplyFilters}
-              className="w-full bg-[#111111] text-white text-xs font-mono uppercase tracking-widest py-3 hover:bg-[#C5A880] hover:text-[#0B0C10] transition-colors cursor-pointer"
-            >
-              Áp Dụng Bộ Lọc
-            </button>
-          </aside>
-
-          {/* ════ RIGHT/FULL GRID: HIỂN THỊ SẢN PHẨM ════ */}
+          {/* ════ RIGHT GRID CONTENT ════ */}
           <div className="flex-1 w-full min-w-0">
-            {/* Top Toolbar: Tìm kiếm & Sắp xếp */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-6 items-center justify-between bg-white border border-[#E5E5E3] p-3.5">
-              <div className="relative w-full sm:max-w-md">
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm trong danh sách này…"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-3.5 py-2 pl-9 text-xs text-[#111111] focus:outline-none focus:border-[#C5A880] placeholder:text-[#AAAAAA]"
-                />
-                <svg className="w-3.5 h-3.5 absolute left-3 top-3 text-[#888888]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                </svg>
-              </div>
+            {/* Top Toolbar */}
+            <ShopToolbar
+              searchQuery={searchInput}
+              onSearchChange={setSearchInput}
+              sortKey={sortKey}
+              onSortChange={setSortKey}
+              totalResults={filteredAndSorted.length}
+              loading={loading}
+            />
 
-              <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                {!loading && (
-                  <span className="text-xs font-mono text-[#777777] uppercase tracking-wider">
-                    {filteredAndSorted.length} sản phẩm
-                  </span>
-                )}
-                <select
-                  value={sortKey}
-                  onChange={(e) => setSortKey(e.target.value)}
-                  className="border border-[#E5E5E3] bg-[#FAFAFA] px-3 py-2 text-xs font-mono uppercase text-[#111111] focus:outline-none focus:border-[#C5A880] cursor-pointer"
-                >
-                  {SORT_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Grid hiển thị sản phẩm */}
+            {/* Grid Sản phẩm */}
             {loading ? (
-              <LoadingSkeleton isFullWidth={!isAllProducts} />
+              <ShopSkeleton count={6} />
             ) : filteredAndSorted.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center bg-white border border-dashed border-[#E5E5E3] p-8">
-                <div className="w-10 h-10 border border-[#EAEAE8] bg-[#FBFBFA] flex items-center justify-center text-[#888888] font-serif text-lg mb-3">
-                  —
-                </div>
-                <p className="text-lg font-serif font-bold text-[#111111] mb-1">
-                  Chưa có sản phẩm nào
-                </p>
-                <p className="text-xs text-[#777777] max-w-sm">
-                  {isAllProducts 
-                    ? 'Không tìm thấy sản phẩm phù hợp với bộ lọc hiện tại của bạn.'
-                    : `Hiện chưa có món đồ nào thuộc danh mục ${currentCategoryObj.label}.`}
-                </p>
-                {isAllProducts ? (
-                  <button
-                    onClick={handleClearFilters}
-                    className="mt-5 bg-[#111111] text-white text-xs font-mono uppercase tracking-widest px-6 py-2.5 hover:bg-[#C5A880] hover:text-[#0B0C10] transition-colors cursor-pointer"
-                  >
-                    Xóa Bộ Lọc
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleSelectCategory(null)}
-                    className="mt-5 bg-[#111111] text-white text-xs font-mono uppercase tracking-widest px-6 py-2.5 hover:bg-[#C5A880] hover:text-[#0B0C10] transition-colors cursor-pointer"
-                  >
-                    Khám Phá Tất Cả Sản Phẩm
-                  </button>
-                )}
-              </div>
+              <ShopEmptyState
+                isAllProducts={isAllProducts}
+                currentCategoryLabel={currentCategoryObj.label}
+                onClearFilters={handleClearFilters}
+                onShowAll={() => handleSelectCategory(null)}
+              />
             ) : (
-              <div className={`grid gap-6 ${isAllProducts ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'}`}>
+              <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredAndSorted.map((product) => (
                   <ProductCard
                     key={product.id}
                     product={product}
-                    onDetail={() => handleProductDetail(product)}
+                    onDetail={() => navigate(`/product/${product.id}`)}
                   />
                 ))}
               </div>
             )}
           </div>
-
         </div>
       </div>
+
       <Footer onCategorySelect={(id) => handleSelectCategory(id)} />
     </div>
   );
