@@ -16,6 +16,7 @@ import listingRoutes from './routes/listingRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import offerRoutes from './routes/offerRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api/listings', listingRoutes);
 app.use('/api/cart_items', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/offers', offerRoutes);
+app.use('/api/admin', adminRoutes);
 
 const PORT = process.env.PORT || 5050;
 app.listen(PORT, () => {
