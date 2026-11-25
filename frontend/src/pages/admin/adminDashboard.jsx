@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
-import { orderServices, listingServices } from '../../services'
+import { adminServices, listingServices } from '../../services'
 
 // Sub-components
 import AdminStatsCards from './components/AdminStatsCards'
@@ -10,9 +10,7 @@ import AdminPendingListings from './components/AdminPendingListings'
 import AdminListingDetailModal from './components/AdminListingDetailModal'
 import AdminUsersTab from './components/AdminUsersTab'
 import AdminEscrowVaultTab from './components/AdminEscrowVaultTab'
-import { PLATFORM_CONFIG } from '../../config/platformConfig'
 
-// Navigation tab identifiers
 const TABS = [
   { id: 'overview', label: 'Tổng Quan' },
   { id: 'listings', label: 'Duyệt Tin Đăng' },
@@ -23,8 +21,8 @@ const TABS = [
 export default function AdminDashboard() {
   const navigate = useNavigate()
 
-  // ── auth check ─────────────────────────────────────────────────────────
-  const [isAdmin, setIsAdmin] = useState(null) // null = loading
+  // ── Authentication Check ────────────────────────────────────────────────
+  const [isAdmin, setIsAdmin] = useState(null)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -38,112 +36,51 @@ export default function AdminDashboard() {
     }
   }, [])
 
-  // ── tab ────────────────────────────────────────────────────────────────
+  // ── Tab State ───────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState('overview')
 
-  // ── overview state ──────────────────────────────────────────────────────
+  // ── Overview KPI Stats ──────────────────────────────────────────────────
   const [stats, setStats] = useState({
-    revenue:         0,
-    commission:      0,
-    orders:          0,
-    paidOrders:      0,
-    pendingOrders:   0,
+    revenue: 0,
+    commission: 0,
+    orders: 0,
+    paidOrders: 0,
+    pendingOrders: 0,
     cancelledOrders: 0,
-    products:        0,
+    products: 0,
   })
-  const [allOrders, setAllOrders] = useState([])
-  const [orderFilter, setOrderFilter] = useState('all') // 'all' | 'paid' | 'pending' | 'cancelled'
   const [loadingStats, setLoadingStats] = useState(false)
 
-  // Derived filtered orders
-  const filteredOrders = allOrders.filter(o => {
-    const rawStatus = (o.order_status || o.status || 'pending').toLowerCase()
-    const isPaid = o.payment_status === 'paid' || ['confirmed', 'completed', 'shipping'].includes(rawStatus)
-    const isCancelled = rawStatus === 'cancelled'
-    const isPending = !isPaid && !isCancelled
-
-    if (orderFilter === 'paid') return isPaid
-    if (orderFilter === 'pending') return isPending
-    if (orderFilter === 'cancelled') return isCancelled
-    return true
-  })
-
-  // ── listings state ──────────────────────────────────────────────────────
-  const [pending, setPending]                 = useState([])
-  const [loadingListings, setLoadingListings] = useState(false)
-  const [listingBanner, setListingBanner]     = useState(null) // { type, msg }
-
-  // ── detail modal state ──────────────────────────────────────────────────
-  const [selectedListing, setSelectedListing] = useState(null)  // full listing detail
-  const [loadingDetail, setLoadingDetail]     = useState(false)
-  const [detailImageIdx, setDetailImageIdx]   = useState(0)     // active image in modal gallery
-
-  // ── fetch overview ──────────────────────────────────────────────────────
   useEffect(() => {
     if (activeTab !== 'overview' || !isAdmin) return
     setLoadingStats(true)
-
-    Promise.allSettled([
-      orderServices.getOrders(),
-      listingServices.getListings(),
-      orderServices.getAdminEscrowPayouts(),
-    ]).then(([ordersRes, listingsRes, escrowRes]) => {
-      let realizedCommission = 0
-
-      // calculate realized commission from completed escrow payouts only
-      if (escrowRes.status === 'fulfilled') {
-        const payouts = escrowRes.value.data?.data ?? escrowRes.value.data ?? []
-        if (Array.isArray(payouts)) {
-          realizedCommission = payouts
-            .filter(p => p.payout_status === 'completed')
-            .reduce((sum, p) => sum + (Number(p.commission_fee) || 0), 0)
-        }
-      }
-
-      // orders
-      if (ordersRes.status === 'fulfilled') {
-        const orders = ordersRes.value.data?.orders ?? ordersRes.value.data ?? []
-        if (Array.isArray(orders)) {
-          const isPaidOrder = o => 
-            o.payment_status === 'paid' || 
-            ['confirmed', 'completed', 'shipping'].includes(o.order_status || o.status)
-          const isCancelledOrder = o =>
-            (o.order_status || o.status) === 'cancelled'
-          const isPendingOrder = o =>
-            !isPaidOrder(o) && !isCancelledOrder(o)
-
-          const paidOrders = orders.filter(isPaidOrder)
-          const pendingOrders = orders.filter(isPendingOrder)
-          const cancelledOrders = orders.filter(isCancelledOrder)
-
-          const revenue = paidOrders.reduce((s, o) => s + (Number(o.total_price || o.total_amount) || 0), 0)
-
-          setStats(prev => ({
-            ...prev,
-            revenue,
-            commission: Math.round(realizedCommission),
-            orders: orders.length,
-            paidOrders: paidOrders.length,
-            pendingOrders: pendingOrders.length,
-            cancelledOrders: cancelledOrders.length,
-          }))
-          setAllOrders(orders)
-        }
-      }
-      // listings count
-      if (listingsRes.status === 'fulfilled') {
-        const data = listingsRes.value.data
-        const list = data?.data ?? data?.listings ?? data ?? []
-        if (Array.isArray(list)) {
-          const active = list.filter(l => l.status === 'active' || !l.status).length
-          setStats(prev => ({ ...prev, products: active }))
-        }
-      }
-    }).finally(() => setLoadingStats(false))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    adminServices.getStats()
+      .then(res => {
+        const d = res.data || res || {}
+        setStats({
+          revenue: d.revenue || 0,
+          commission: d.commission || 0,
+          orders: d.orders || 0,
+          paidOrders: d.paidOrders || 0,
+          pendingOrders: d.pendingOrders || 0,
+          cancelledOrders: d.cancelledOrders || 0,
+          products: d.activeProducts || 0,
+        })
+      })
+      .catch(err => console.error('Failed to load admin stats:', err))
+      .finally(() => setLoadingStats(false))
   }, [activeTab, isAdmin])
 
-  // ── fetch pending listings ──────────────────────────────────────────────
+  // ── Pending Listings State ──────────────────────────────────────────────
+  const [pending, setPending]                 = useState([])
+  const [loadingListings, setLoadingListings] = useState(false)
+  const [listingBanner, setListingBanner]     = useState(null)
+
+  // ── Detail Modal State ──────────────────────────────────────────────────
+  const [selectedListing, setSelectedListing] = useState(null)
+  const [loadingDetail, setLoadingDetail]     = useState(false)
+  const [detailImageIdx, setDetailImageIdx]   = useState(0)
+
   useEffect(() => {
     if (activeTab !== 'listings' || !isAdmin) return
     setLoadingListings(true)
@@ -156,7 +93,6 @@ export default function AdminDashboard() {
       .finally(() => setLoadingListings(false))
   }, [activeTab, isAdmin])
 
-  // ── open detail modal ───────────────────────────────────────────────────
   const handleOpenDetail = async (id) => {
     setLoadingDetail(true)
     setSelectedListing(null)
@@ -172,7 +108,6 @@ export default function AdminDashboard() {
     }
   }
 
-  // ── approve / reject listing ────────────────────────────────────────────
   const handleListingAction = async (id, status) => {
     try {
       await listingServices.updateListingStatus(id, status)
@@ -191,7 +126,7 @@ export default function AdminDashboard() {
     }
   }
 
-  // ── access control renders ──────────────────────────────────────────────
+  // ── Access Control Renders ──────────────────────────────────────────────
   if (isAdmin === null) {
     return (
       <div className="min-h-screen bg-[#FBFBFA]">
@@ -232,14 +167,12 @@ export default function AdminDashboard() {
     )
   }
 
-  // ── main render ─────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#FBFBFA]">
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-
-        {/* Page header */}
+        {/* Page Header */}
         <div className="mb-8 border-b border-[#E5E5E3] pb-6">
           <p className="text-xs font-mono uppercase tracking-widest text-[#888888] mb-1">
             Bảng Điều Khiển Quản Trị
@@ -252,7 +185,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Tab navigation bar */}
+        {/* Tab Navigation */}
         <div className="flex border-b border-[#E5E5E3] mb-8 gap-0">
           {TABS.map(tab => {
             const active = activeTab === tab.id
@@ -277,20 +210,15 @@ export default function AdminDashboard() {
           })}
         </div>
 
-        {/* ════ TAB 1: TỔNG QUAN ════════════════════════════════════════ */}
+        {/* TAB 1: TỔNG QUAN (Stats Cards + Orders Table) */}
         {activeTab === 'overview' && (
           <div className="space-y-8">
             <AdminStatsCards stats={stats} loadingStats={loadingStats} />
-            <AdminOrdersTable 
-              orders={filteredOrders} 
-              stats={stats} 
-              orderFilter={orderFilter} 
-              setOrderFilter={setOrderFilter} 
-            />
+            <AdminOrdersTable />
           </div>
         )}
 
-        {/* ════ TAB 2: DUYỆT TIN ĐĂNG ══════════════════════════════════ */}
+        {/* TAB 2: DUYỆT TIN ĐĂNG */}
         {activeTab === 'listings' && (
           <>
             <AdminPendingListings 
@@ -311,16 +239,15 @@ export default function AdminDashboard() {
           </>
         )}
 
-        {/* ════ TAB 3: NGƯỜI DÙNG ═══════════════════════════════════════ */}
+        {/* TAB 3: NGƯỜI DÙNG SÀN */}
         {activeTab === 'users' && (
           <AdminUsersTab />
         )}
 
-        {/* ════ TAB 4: KÝ QUỸ & GIẢI NGÂN (AURA VAULT) ══════════════════ */}
+        {/* TAB 4: SỔ CÁI KÝ QUỸ & GIẢI NGÂN */}
         {activeTab === 'escrow' && (
           <AdminEscrowVaultTab />
         )}
-
       </div>
     </div>
   )
