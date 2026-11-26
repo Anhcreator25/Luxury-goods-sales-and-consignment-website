@@ -1,9 +1,19 @@
 import pool from "../config/db.js";
 
-/**
- * Aggregates key KPI metrics for Admin Dashboard via SQL Aggregation.
- * Optimization: Concurrent execution via Promise.all across database connection pool.
- */
+const PAID_ORDER_CONDITION = "(o.payment_status = 'paid' OR o.order_status IN ('confirmed', 'completed', 'shipping'))";
+
+// Clamps pagination inputs to safe positive bounds
+const normalizePagination = (page, limit, defaultLimit = 10) => {
+    const safePage = Math.max(1, parseInt(page, 10) || 1);
+    const safeLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || defaultLimit));
+    return {
+        page: safePage,
+        limit: safeLimit,
+        offset: (safePage - 1) * safeLimit
+    };
+};
+
+// Aggregates key KPI metrics for Admin Dashboard via SQL Aggregation
 export const getAdminStatsService = async () => {
     const connection = await pool.getConnection();
     try {
@@ -13,31 +23,30 @@ export const getAdminStatsService = async () => {
             [listingStats],
             [userStats]
         ] = await Promise.all([
-            // 1. Order and Revenue Metrics
             connection.query(`
                 SELECT 
                     COUNT(*) as total_orders,
                     SUM(CASE 
-                        WHEN payment_status = 'paid' OR order_status IN ('confirmed', 'completed', 'shipping') 
+                        WHEN ${PAID_ORDER_CONDITION} 
                         THEN 1 ELSE 0 
                     END) as paid_orders,
                     SUM(CASE 
-                        WHEN order_status = 'cancelled' 
+                        WHEN o.order_status = 'cancelled' 
                         THEN 1 ELSE 0 
                     END) as cancelled_orders,
                     SUM(CASE 
-                        WHEN (payment_status != 'paid' OR payment_status IS NULL) 
-                             AND order_status NOT IN ('confirmed', 'completed', 'shipping', 'cancelled') 
+                        WHEN (o.payment_status != 'paid' OR o.payment_status IS NULL) 
+                             AND o.order_status NOT IN ('confirmed', 'completed', 'shipping', 'cancelled') 
                         THEN 1 ELSE 0 
                     END) as pending_orders,
                     COALESCE(SUM(CASE 
-                        WHEN payment_status = 'paid' OR order_status IN ('confirmed', 'completed', 'shipping') 
-                        THEN total_amount ELSE 0 
+                        WHEN ${PAID_ORDER_CONDITION} 
+                        THEN o.total_amount ELSE 0 
                     END), 0) as total_revenue
-                FROM orders
+                FROM orders o
             `),
 
-            // 2. Realized Commission & Pending Escrow Disbursements
+            // 2. Realized Commission from Successfully Disbursed Escrow Payouts & Pending Disbursements
             connection.query(`
                 SELECT 
                     COALESCE(SUM(CASE WHEN ep.status = 'completed' THEN ep.commission_fee ELSE 0 END), 0) as realized_commission,
@@ -89,66 +98,127 @@ export const getAdminStatsService = async () => {
 };
 
 /**
- * Retrieves time-series revenue and GMV data for analytics chart rendering.
- * @param {string} range '7days' | '30days' | 'year'
+ * Retrieves time-series revenue and GMV data for analytics chart rendering with multi-dimensional grouping and custom date filters.
+ * @param {Object} options
+ * @param {string} options.range '7days' | '30days' | 'year' | 'custom'
+ * @param {string} options.groupBy 'day' | 'month' | 'year'
+ * @param {string} [options.startDate] 'YYYY-MM-DD'
+ * @param {string} [options.endDate] 'YYYY-MM-DD'
+ * @param {string} [options.status] 'all' | 'paid' | 'completed'
  */
-export const getRevenueAnalyticsService = async (range = '7days') => {
+export const getRevenueAnalyticsService = async ({
+    range = '7days',
+    groupBy = 'day',
+    startDate,
+    endDate,
+    status = 'all'
+} = {}) => {
     const connection = await pool.getConnection();
     try {
-        let intervalSql = "INTERVAL 7 DAY";
         let dateFormat = "%Y-%m-%d";
-
-        if (range === '30days') {
-            intervalSql = "INTERVAL 30 DAY";
-        } else if (range === 'year') {
-            intervalSql = "INTERVAL 1 YEAR";
+        if (groupBy === 'month') {
             dateFormat = "%Y-%m";
+        } else if (groupBy === 'year') {
+            dateFormat = "%Y";
         }
+
+        const params = [];
+        let whereClauses = [];
+
+        // 1. Time range filtering (validate YYYY-MM-DD for custom dates)
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (startDate && endDate) {
+            if (!dateRegex.test(startDate) || !dateRegex.test(endDate)) {
+                const err = new Error('Invalid date format. Expected YYYY-MM-DD.');
+                err.status = 400;
+                throw err;
+            }
+            whereClauses.push("o.created_at >= ? AND o.created_at <= ?");
+            params.push(`${startDate} 00:00:00`, `${endDate} 23:59:59`);
+        } else if (range === '30days') {
+            whereClauses.push("o.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)");
+        } else if (range === 'year') {
+            whereClauses.push("o.created_at >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)");
+        } else {
+            whereClauses.push("o.created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)");
+        }
+
+        // 2. Status filtering condition for revenue
+        let revenueStatusCondition = PAID_ORDER_CONDITION;
+        if (status === 'completed') {
+            revenueStatusCondition = "o.order_status = 'completed'";
+        } else if (status === 'paid') {
+            revenueStatusCondition = "o.payment_status = 'paid'";
+        }
+
+        const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
         const query = `
             SELECT 
-                DATE_FORMAT(o.created_at, '${dateFormat}') as date,
+                DATE_FORMAT(o.created_at, '${dateFormat}') as date_label,
                 COALESCE(SUM(CASE 
-                    WHEN o.payment_status = 'paid' OR o.order_status IN ('confirmed', 'completed', 'shipping') 
+                    WHEN ${revenueStatusCondition} 
                     THEN o.total_amount ELSE 0 
                 END), 0) as gmv,
-                COALESCE(SUM(CASE 
-                    WHEN o.payment_status = 'paid' OR o.order_status IN ('confirmed', 'completed', 'shipping') 
-                    THEN o.total_amount * 0.05 ELSE 0 
-                END), 0) as estimated_commission,
-                COUNT(o.id) as order_count
+                COALESCE(SUM(ep.completed_commission), 0) as estimated_commission,
+                COUNT(DISTINCT CASE 
+                    WHEN ${revenueStatusCondition}
+                    THEN o.id 
+                END) as order_count
             FROM orders o
-            WHERE o.created_at >= DATE_SUB(CURDATE(), ${intervalSql})
+            LEFT JOIN (
+                SELECT 
+                    order_id, 
+                    SUM(CASE WHEN status = 'completed' THEN commission_fee ELSE 0 END) as completed_commission
+                FROM escrow_payouts
+                GROUP BY order_id
+            ) ep ON ep.order_id = o.id
+            ${whereSql}
             GROUP BY DATE_FORMAT(o.created_at, '${dateFormat}')
-            ORDER BY date ASC
+            ORDER BY date_label ASC
         `;
 
-        const [rows] = await connection.query(query);
-        return rows.map(r => ({
-            date: r.date,
+        const [rows] = await connection.query(query, params);
+
+        const series = rows.map(r => ({
+            date: r.date_label,
             gmv: Number(r.gmv || 0),
             commission: Math.round(Number(r.estimated_commission || 0)),
             orderCount: Number(r.order_count || 0)
         }));
+
+        // Compute summary metrics for the selected window
+        const totalGmv = series.reduce((sum, item) => sum + item.gmv, 0);
+        const totalCommission = series.reduce((sum, item) => sum + item.commission, 0);
+        const totalOrders = series.reduce((sum, item) => sum + item.orderCount, 0);
+        const aov = totalOrders > 0 ? Math.round(totalGmv / totalOrders) : 0;
+
+        return {
+            summary: {
+                totalGmv,
+                totalCommission,
+                totalOrders,
+                aov,
+                groupBy,
+                range
+            },
+            series
+        };
     } finally {
         connection.release();
     }
 };
 
-/**
- * Retrieves paginated admin order list with keyword search and status filtering.
- * Normalized schema: uses o.buyer_id
- */
+// Retrieves paginated admin order list with keyword search and status filtering
 export const getAdminOrdersService = async ({ page = 1, limit = 10, status = 'all', search = '' }) => {
     const connection = await pool.getConnection();
     try {
-        const offset = (Number(page) - 1) * Number(limit);
+        const { page: safePage, limit: safeLimit, offset } = normalizePagination(page, limit, 10);
         const params = [];
         let whereClauses = [];
 
-        // Status filtering
         if (status === 'paid') {
-            whereClauses.push("(o.payment_status = 'paid' OR o.order_status IN ('confirmed', 'completed', 'shipping'))");
+            whereClauses.push(PAID_ORDER_CONDITION);
         } else if (status === 'pending') {
             whereClauses.push("((o.payment_status != 'paid' OR o.payment_status IS NULL) AND o.order_status NOT IN ('confirmed', 'completed', 'shipping', 'cancelled'))");
         } else if (status === 'cancelled') {
@@ -207,13 +277,13 @@ export const getAdminOrdersService = async ({ page = 1, limit = 10, status = 'al
             LIMIT ? OFFSET ?
         `;
 
-        const [rows] = await connection.query(dataQuery, [...params, Number(limit), Number(offset)]);
+        const [rows] = await connection.query(dataQuery, [...params, safeLimit, offset]);
 
         return {
             total,
-            page: Number(page),
-            limit: Number(limit),
-            totalPages: Math.ceil(total / Number(limit)),
+            page: safePage,
+            limit: safeLimit,
+            totalPages: Math.ceil(total / safeLimit),
             orders: rows.map(r => ({
                 ...r,
                 items: typeof r.items === 'string' ? JSON.parse(r.items) : (r.items || [])
@@ -224,14 +294,11 @@ export const getAdminOrdersService = async ({ page = 1, limit = 10, status = 'al
     }
 };
 
-/**
- * Retrieves complete list of platform users.
- * Optimization: Derived Table JOIN eliminates N+1 Correlated Subqueries.
- */
+// Retrieves paginated platform users with aggregated listing & purchase metrics
 export const getAdminUsersService = async ({ page = 1, limit = 15, search = '', role = 'all' }) => {
     const connection = await pool.getConnection();
     try {
-        const offset = (Number(page) - 1) * Number(limit);
+        const { page: safePage, limit: safeLimit, offset } = normalizePagination(page, limit, 15);
         const params = [];
         let whereClauses = [];
 
@@ -279,13 +346,13 @@ export const getAdminUsersService = async ({ page = 1, limit = 15, search = '', 
             LIMIT ? OFFSET ?
         `;
 
-        const [users] = await connection.query(dataQuery, [...params, Number(limit), Number(offset)]);
+        const [users] = await connection.query(dataQuery, [...params, safeLimit, offset]);
 
         return {
             total,
-            page: Number(page),
-            limit: Number(limit),
-            totalPages: Math.ceil(total / Number(limit)),
+            page: safePage,
+            limit: safeLimit,
+            totalPages: Math.ceil(total / safeLimit),
             users
         };
     } finally {

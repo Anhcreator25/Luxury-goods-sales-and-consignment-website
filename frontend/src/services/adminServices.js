@@ -6,9 +6,9 @@ export const adminServices = {
         return axiosClient.get('/admin/stats');
     },
 
-    // Retrieves revenue chart data for a specific time range ('7days' | '30days' | 'year')
-    getRevenueAnalytics: (range = '7days') => {
-        return axiosClient.get('/admin/revenue-analytics', { params: { range } });
+    // Retrieves revenue chart data with multi-dimensional filters ('day' | 'month' | 'year', range, startDate, endDate, status)
+    getRevenueAnalytics: (params = {}) => {
+        return axiosClient.get('/admin/revenue-analytics', { params });
     },
 
     // Retrieves paginated order list with search and status filters

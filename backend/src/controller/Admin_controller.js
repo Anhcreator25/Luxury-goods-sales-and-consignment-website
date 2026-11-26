@@ -20,8 +20,21 @@ export const getAdminStatsController = async (req, res) => {
 // GET /api/admin/revenue-analytics
 export const getRevenueAnalyticsController = async (req, res) => {
     try {
-        const range = req.query.range || '7days';
-        const analytics = await adminService.getRevenueAnalyticsService(range);
+        const {
+            range = '7days',
+            groupBy = 'day',
+            startDate,
+            endDate,
+            status = 'all'
+        } = req.query;
+
+        const analytics = await adminService.getRevenueAnalyticsService({
+            range,
+            groupBy,
+            startDate,
+            endDate,
+            status
+        });
         return res.status(200).json({
             success: true,
             data: analytics
