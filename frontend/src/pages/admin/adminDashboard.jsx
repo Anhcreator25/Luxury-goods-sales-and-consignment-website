@@ -1,43 +1,44 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import Navbar from '../../components/Navbar'
 import { adminServices, listingServices } from '../../services'
 
-// Sub-components
+import AdminSidebar from './components/AdminSidebar'
 import AdminStatsCards from './components/AdminStatsCards'
 import AdminOrdersTable from './components/AdminOrdersTable'
 import AdminPendingListings from './components/AdminPendingListings'
 import AdminListingDetailModal from './components/AdminListingDetailModal'
-import AdminUsersTab from './components/AdminUsersTab'
-import AdminEscrowVaultTab from './components/AdminEscrowVaultTab'
 
-const TABS = [
-  { id: 'overview', label: 'Tổng Quan' },
-  { id: 'listings', label: 'Duyệt Tin Đăng' },
-  { id: 'users',    label: 'Người Dùng' },
-  { id: 'escrow',   label: 'Ký Quỹ & Giải Ngân' },
-]
+const AdminRevenueChart = lazy(() => import('./components/AdminRevenueChart'))
+const AdminUsersTab = lazy(() => import('./components/AdminUsersTab'))
+const AdminEscrowVaultTab = lazy(() => import('./components/AdminEscrowVaultTab'))
 
+// Renders admin dashboard shell and coordinates tab state
 export default function AdminDashboard() {
   const navigate = useNavigate()
+  const bannerTimerRef = useRef(null)
 
-  // ── Authentication Check ────────────────────────────────────────────────
   const [isAdmin, setIsAdmin] = useState(null)
+  const [user, setUser] = useState(null)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
-    const raw   = localStorage.getItem('user')
-    if (!token || !raw) { setIsAdmin(false); return }
+    const raw = localStorage.getItem('user')
+    if (!token || !raw) {
+      setIsAdmin(false)
+      return
+    }
     try {
       const u = JSON.parse(raw)
+      setUser(u)
       setIsAdmin(u?.role === 'admin')
     } catch {
       setIsAdmin(false)
     }
   }, [])
 
-  // ── Tab State ───────────────────────────────────────────────────────────
+  // ── Navigation State ───────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState('overview')
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   // ── Overview KPI Stats ──────────────────────────────────────────────────
   const [stats, setStats] = useState({
@@ -48,6 +49,7 @@ export default function AdminDashboard() {
     pendingOrders: 0,
     cancelledOrders: 0,
     products: 0,
+    pendingProducts: 0,
   })
   const [loadingStats, setLoadingStats] = useState(false)
 
@@ -65,21 +67,20 @@ export default function AdminDashboard() {
           pendingOrders: d.pendingOrders || 0,
           cancelledOrders: d.cancelledOrders || 0,
           products: d.activeProducts || 0,
+          pendingProducts: d.pendingProducts || 0,
         })
       })
       .catch(err => console.error('Failed to load admin stats:', err))
       .finally(() => setLoadingStats(false))
   }, [activeTab, isAdmin])
 
-  // ── Pending Listings State ──────────────────────────────────────────────
-  const [pending, setPending]                 = useState([])
+  const [pending, setPending] = useState([])
   const [loadingListings, setLoadingListings] = useState(false)
-  const [listingBanner, setListingBanner]     = useState(null)
+  const [listingBanner, setListingBanner] = useState(null)
 
-  // ── Detail Modal State ──────────────────────────────────────────────────
   const [selectedListing, setSelectedListing] = useState(null)
-  const [loadingDetail, setLoadingDetail]     = useState(false)
-  const [detailImageIdx, setDetailImageIdx]   = useState(0)
+  const [loadingDetail, setLoadingDetail] = useState(false)
+  const [detailImageIdx, setDetailImageIdx] = useState(0)
 
   useEffect(() => {
     if (activeTab !== 'listings' || !isAdmin) return
@@ -93,6 +94,13 @@ export default function AdminDashboard() {
       .finally(() => setLoadingListings(false))
   }, [activeTab, isAdmin])
 
+  useEffect(() => {
+    return () => {
+      if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current)
+    }
+  }, [])
+
+  // Opens detail modal for a pending listing
   const handleOpenDetail = async (id) => {
     setLoadingDetail(true)
     setSelectedListing(null)
@@ -108,31 +116,33 @@ export default function AdminDashboard() {
     }
   }
 
+  // Approves or rejects a pending listing and updates banner
   const handleListingAction = async (id, status) => {
+    if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current)
     try {
       await listingServices.updateListingStatus(id, status)
       setPending(prev => prev.filter(l => (l.id ?? l._id) !== id))
+      setStats(prev => ({ ...prev, pendingProducts: Math.max(0, prev.pendingProducts - 1) }))
       setListingBanner({
         type: 'success',
         msg: `Tin đăng #${id} đã được ${status === 'active' ? 'duyệt thành công' : 'từ chối'}.`,
       })
-      setTimeout(() => setListingBanner(null), 4000)
     } catch {
       setListingBanner({
         type: 'error',
         msg: `Cập nhật trạng thái tin #${id} thất bại. Vui lòng thử lại.`,
       })
-      setTimeout(() => setListingBanner(null), 4000)
+    } finally {
+      bannerTimerRef.current = setTimeout(() => setListingBanner(null), 4000)
     }
   }
 
   // ── Access Control Renders ──────────────────────────────────────────────
   if (isAdmin === null) {
     return (
-      <div className="min-h-screen bg-[#FBFBFA]">
-        <Navbar />
-        <div className="flex items-center justify-center min-h-[60vh] text-xs font-mono uppercase tracking-wider text-[#888888] animate-pulse">
-          Đang xác thực quyền truy cập…
+      <div className="min-h-screen bg-[#FBFBFA] flex items-center justify-center">
+        <div className="text-xs font-mono uppercase tracking-widest text-[#888888] animate-pulse">
+          Đang xác thực bảo mật quyền quản trị…
         </div>
       </div>
     )
@@ -140,24 +150,25 @@ export default function AdminDashboard() {
 
   if (isAdmin === false) {
     return (
-      <div className="min-h-screen bg-[#FBFBFA]">
-        <Navbar />
-        <div className="max-w-md mx-auto px-4 py-24 text-center">
+      <div className="min-h-screen bg-[#FBFBFA] flex items-center justify-center px-4">
+        <div className="max-w-md w-full bg-white border border-[#E5E5E3] p-8 text-center shadow-sm">
           <p className="text-4xl mb-4 select-none">🔒</p>
-          <h1 className="text-lg font-bold text-[#111111] mb-2">Truy Cập Bị Từ Chối</h1>
+          <h1 className="text-base font-bold uppercase tracking-wider text-[#111111] mb-2 font-mono">
+            Truy Cập Bị Từ Chối
+          </h1>
           <p className="text-xs text-[#666666] mb-6">
-            Bạn không có quyền quản trị viên để xem trang này.
+            Tài khoản hiện tại không có quyền truy cập vào trung tâm điều phối quản trị Aura Vault.
           </p>
           <div className="flex justify-center gap-3">
             <button
               onClick={() => navigate('/')}
-              className="px-5 py-2.5 bg-[#111111] text-white text-xs font-mono uppercase tracking-wider hover:bg-[#333333] transition-colors"
+              className="px-5 py-2.5 bg-[#111111] text-white text-xs font-mono uppercase tracking-wider hover:bg-black transition-colors"
             >
               Về Trang Chủ
             </button>
             <Link
               to="/login"
-              className="px-5 py-2.5 border border-[#111111] text-[#111111] text-xs font-mono uppercase tracking-wider hover:bg-[#111111] hover:text-white transition-colors"
+              className="px-5 py-2.5 border border-[#111111] text-[#111111] text-xs font-mono uppercase tracking-wider hover:bg-[#F5F5F3] transition-colors"
             >
               Đăng Nhập Khác
             </Link>
@@ -168,87 +179,88 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FBFBFA]">
-      <Navbar />
+    <div className="min-h-screen bg-[#FBFBFA] flex flex-col md:flex-row font-sans text-[#111111]">
+      {/* 1. Left Fixed / Collapsible Portal Sidebar */}
+      <AdminSidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        pendingCount={activeTab === 'listings' ? pending.length : stats.pendingProducts}
+        isCollapsed={isCollapsed}
+        setIsCollapsed={setIsCollapsed}
+      />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Page Header */}
-        <div className="mb-8 border-b border-[#E5E5E3] pb-6">
-          <p className="text-xs font-mono uppercase tracking-widest text-[#888888] mb-1">
-            Bảng Điều Khiển Quản Trị
-          </p>
-          <div className="flex items-baseline justify-between">
-            <h1 className="text-2xl font-bold tracking-tight text-[#111111]">
-              ADMIN DASHBOARD
+      {/* 2. Main Administration Area */}
+      <main className="flex-1 min-w-0 flex flex-col min-h-screen">
+        {/* Top Minimalist Header */}
+        <header className="h-20 bg-white border-b border-[#E5E5E3] px-6 lg:px-10 flex items-center justify-between sticky top-0 z-20">
+          <div>
+            <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#888888]">
+              Aura Vault Management Suite
+            </p>
+            <h1 className="text-lg font-bold font-serif uppercase tracking-tight text-[#111111]">
+              {activeTab === 'overview' && 'Bảng Điều Khiển Tổng Quan'}
+              {activeTab === 'listings' && 'Thẩm Định Tin Ký Gửi'}
+              {activeTab === 'users' && 'Quản Lý Tài Khoản Khách Hàng'}
+              {activeTab === 'escrow' && 'Sổ Cái Ký Quỹ & Giải Ngân'}
             </h1>
-            <span className="text-xs font-mono text-[#888888]">Quản Trị Sàn Aura Vault</span>
           </div>
-        </div>
 
-        {/* Tab Navigation */}
-        <div className="flex border-b border-[#E5E5E3] mb-8 gap-0">
-          {TABS.map(tab => {
-            const active = activeTab === tab.id
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-3 px-6 text-xs font-mono uppercase tracking-wider border-b-2 transition-colors -mb-px ${
-                  active
-                    ? 'border-[#111111] text-[#111111] font-bold bg-white'
-                    : 'border-transparent text-[#888888] hover:text-[#111111]'
-                }`}
-              >
-                {tab.label}
-                {tab.id === 'listings' && pending.length > 0 && (
-                  <span className="ml-2 bg-[#D93838] text-white text-[10px] px-1.5 py-0.5 rounded-full">
-                    {pending.length}
-                  </span>
-                )}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* TAB 1: TỔNG QUAN (Stats Cards + Orders Table) */}
-        {activeTab === 'overview' && (
-          <div className="space-y-8">
-            <AdminStatsCards stats={stats} loadingStats={loadingStats} />
-            <AdminOrdersTable />
+          <div className="flex items-center gap-4">
+            <div className="text-right hidden sm:block">
+              <p className="text-xs font-semibold text-[#111111]">{user?.name || 'Administrator'}</p>
+              <p className="text-[10px] font-mono text-[#888888] uppercase tracking-wider">Super Admin</p>
+            </div>
+            <div className="w-9 h-9 rounded-full bg-[#111111] text-white flex items-center justify-center font-mono text-xs font-bold shadow-sm">
+              {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
+            </div>
           </div>
-        )}
+        </header>
 
-        {/* TAB 2: DUYỆT TIN ĐĂNG */}
-        {activeTab === 'listings' && (
-          <>
-            <AdminPendingListings 
-              pending={pending}
-              loadingListings={loadingListings}
-              listingBanner={listingBanner}
-              handleOpenDetail={handleOpenDetail}
-              handleListingAction={handleListingAction}
-            />
-            <AdminListingDetailModal 
-              selectedListing={selectedListing}
-              setSelectedListing={setSelectedListing}
-              loadingDetail={loadingDetail}
-              detailImageIdx={detailImageIdx}
-              setDetailImageIdx={setDetailImageIdx}
-              handleListingAction={handleListingAction}
-            />
-          </>
-        )}
+        {/* Dynamic Body Content */}
+        <div className="p-6 lg:p-10 flex-1 max-w-7xl w-full mx-auto">
+          {activeTab === 'overview' && (
+            <div className="space-y-8">
+              <AdminStatsCards stats={stats} loadingStats={loadingStats} />
+              <Suspense fallback={<div className="h-[360px] bg-white border border-[#E5E5E3] animate-pulse" />}>
+                <AdminRevenueChart />
+              </Suspense>
+              <AdminOrdersTable />
+            </div>
+          )}
 
-        {/* TAB 3: NGƯỜI DÙNG SÀN */}
-        {activeTab === 'users' && (
-          <AdminUsersTab />
-        )}
+          {activeTab === 'listings' && (
+            <>
+              <AdminPendingListings
+                pending={pending}
+                loadingListings={loadingListings}
+                listingBanner={listingBanner}
+                handleOpenDetail={handleOpenDetail}
+                handleListingAction={handleListingAction}
+              />
+              <AdminListingDetailModal
+                selectedListing={selectedListing}
+                setSelectedListing={setSelectedListing}
+                loadingDetail={loadingDetail}
+                detailImageIdx={detailImageIdx}
+                setDetailImageIdx={setDetailImageIdx}
+                handleListingAction={handleListingAction}
+              />
+            </>
+          )}
 
-        {/* TAB 4: SỔ CÁI KÝ QUỸ & GIẢI NGÂN */}
-        {activeTab === 'escrow' && (
-          <AdminEscrowVaultTab />
-        )}
-      </div>
+          {activeTab === 'users' && (
+            <Suspense fallback={<div className="h-64 bg-white border border-[#E5E5E3] animate-pulse" />}>
+              <AdminUsersTab />
+            </Suspense>
+          )}
+
+          {activeTab === 'escrow' && (
+            <Suspense fallback={<div className="h-64 bg-white border border-[#E5E5E3] animate-pulse" />}>
+              <AdminEscrowVaultTab />
+            </Suspense>
+          )}
+        </div>
+      </main>
     </div>
   )
 }
