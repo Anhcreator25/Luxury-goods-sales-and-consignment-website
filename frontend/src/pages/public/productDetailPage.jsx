@@ -6,6 +6,8 @@ import { formatPrice, CONDITION_MAP, formatConditionGrade } from '../../utils/fo
 import { listingServices, cartServices } from '../../services'
 import MakeOfferModal from '../../components/MakeOfferModal'
 import SellerReputationCard from '../../components/SellerReputationCard'
+import ProductGallery from './components/ProductGallery'
+import ProductTrustAndSpecs from './components/ProductTrustAndSpecs'
 
 export default function ProductDetailPage() {
   const { id } = useParams()
@@ -14,12 +16,10 @@ export default function ProductDetailPage() {
 
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [activeImage, setActiveImage] = useState(0)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [cartLoading, setCartLoading] = useState(false)
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false)
-  const [isLightboxOpen, setIsLightboxOpen] = useState(false)
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -127,13 +127,9 @@ export default function ProductDetailPage() {
     )
   }
 
-  const rawImages = Array.isArray(product?.images) && product.images.length > 0 
+  const images = Array.isArray(product?.images) && product.images.length > 0
     ? product.images.map(img => typeof img === 'string' ? img : img.image_url)
     : (product?.primary_image ? [product.primary_image] : (product?.image_url ? [product.image_url] : []))
-
-  const images = rawImages
-  const hasImages = images.length > 0
-  const mainImageSrc = hasImages ? images[activeImage] : "https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=800&q=80"
 
   const conditionInfo = CONDITION_MAP[product?.condition_grade] || { label: formatConditionGrade(product?.condition_grade) }
   const badgeLabel = formatConditionGrade(product?.condition_grade) || conditionInfo.label
@@ -163,60 +159,12 @@ export default function ProductDetailPage() {
       <main className="max-w-7xl mx-auto px-6 lg:px-12 py-12 lg:py-16">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
 
-          {/* ── LEFT: Studio Gallery (6 Columns, Compact Frame) ── */}
-          <div className="lg:col-span-6 flex flex-col gap-4 sticky top-24">
-            {/* Main Stage Image */}
-            <div
-              onClick={() => setIsLightboxOpen(true)}
-              className="w-full max-w-[460px] mx-auto aspect-square bg-[#F7F7F6] border border-[#EAEAE8] rounded-xl overflow-hidden relative group cursor-zoom-in"
-            >
-              <img
-                src={mainImageSrc}
-                alt={product?.title}
-                className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
-              />
-
-              {/* Zoom Hint */}
-              <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-md border border-[#E5E5E3] text-[#111111] text-[9px] font-mono tracking-[0.15em] uppercase px-2.5 py-1 rounded-md shadow-sm opacity-80 group-hover:opacity-100 transition-opacity">
-                Phóng to ⤢
-              </div>
-
-              {/* Floating Verified Stamp */}
-              <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md border border-[#E5E5E3] text-[#111111] text-[9px] font-mono tracking-[0.2em] uppercase px-3 py-1.5 shadow-sm">
-                ✓ Aura Vault Authenticated
-              </div>
-
-              {/* Condition Badge */}
-              {product?.condition_grade && (
-                <div className="absolute top-4 right-4 bg-[#111111] text-white text-[9px] font-mono tracking-widest uppercase px-3 py-1.5 shadow-sm">
-                  {badgeLabel}
-                </div>
-              )}
-            </div>
-
-            {/* Thumbnail Strip */}
-            {hasImages && images.length > 1 && (
-              <div className="grid grid-cols-5 gap-3 pt-1">
-                {images.slice(0, 5).map((src, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActiveImage(idx)}
-                    className={`aspect-square bg-[#F7F7F6] border overflow-hidden transition-all duration-200 cursor-pointer ${
-                      activeImage === idx
-                        ? 'border-[#111111] ring-1 ring-[#111111]'
-                        : 'border-[#EAEAE8] opacity-70 hover:opacity-100 hover:border-[#111111]'
-                    }`}
-                  >
-                    <img
-                      src={src}
-                      alt={`Góc chụp ${idx + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* ── LEFT: Studio Gallery ── */}
+          <ProductGallery
+            images={images}
+            title={product?.title}
+            badgeLabel={badgeLabel}
+          />
 
           {/* ── RIGHT: Acquisition & Provenance Dossier (5 Columns) ── */}
           <div className="lg:col-span-5 flex flex-col space-y-7">
@@ -267,18 +215,18 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <button
                   onClick={handleAddToCart}
                   disabled={cartLoading}
-                  className="w-full py-4 bg-white border border-[#111111] text-[#111111] hover:bg-[#F5F5F3] text-xs font-mono uppercase tracking-[0.2em] transition-all cursor-pointer disabled:opacity-50"
+                  className="w-full py-2.5 bg-white border border-[#111111] text-[#111111] hover:bg-[#F5F5F3] text-[11px] font-mono uppercase tracking-[0.18em] rounded-lg transition-all cursor-pointer disabled:opacity-50"
                 >
                   {cartLoading ? 'Đang Xử Lý...' : 'Thêm Vào Giỏ'}
                 </button>
                 <button
                   onClick={handleBuyNow}
                   disabled={cartLoading}
-                  className="w-full py-4 bg-[#111111] text-white hover:bg-[#2A2A2A] text-xs font-mono uppercase tracking-[0.2em] transition-all cursor-pointer shadow-lg disabled:opacity-50"
+                  className="w-full py-2.5 bg-[#111111] text-white hover:bg-[#2A2A2A] text-[11px] font-mono uppercase tracking-[0.18em] rounded-lg transition-all cursor-pointer shadow-sm disabled:opacity-50"
                 >
                   Mua Ngay →
                 </button>
@@ -294,10 +242,10 @@ export default function ProductDetailPage() {
                   }
                   setIsOfferModalOpen(true)
                 }}
-                className="w-full py-3.5 bg-[#FAF9F7] hover:bg-[#F3EFE6] border border-[#111111] text-[#111111] text-xs font-mono uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2.5 bg-[#FAF9F7] hover:bg-[#F3EFE6] border border-[#111111] text-[#111111] text-[11px] font-mono uppercase tracking-[0.18em] rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>🏷️</span>
-                <span> Thương lượng giá</span>
+                <span>Thương lượng giá</span>
               </button>
 
               {!token && (
@@ -318,61 +266,8 @@ export default function ProductDetailPage() {
               joinedDate={product?.seller_joined}
             />
 
-            {/* ── 3 Trụ Cột Bảo Chứng (Trust Pillars) ── */}
-            <div className="bg-[#F8F8F7] border border-[#EAEAE8] p-5 space-y-3.5">
-              <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#111111] font-semibold flex items-center gap-2">
-                <span>🛡️</span>
-                <span>Bảo Chứng Độc Quyền Từ Aura Vault</span>
-              </div>
-              <ul className="space-y-2.5 text-xs text-[#555555] font-light">
-                <li className="flex items-start gap-2">
-                  <span className="text-[#111111] font-bold">✓</span>
-                  <span><strong>100% Giám định độc lập</strong> bởi chuyên gia quốc tế trước khi bàn giao.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#111111] font-bold">✓</span>
-                  <span><strong>Cơ chế Escrow ký quỹ</strong> bảo vệ toàn vẹn dòng tiền của người mua.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#111111] font-bold">✓</span>
-                  <span><strong>Bảo hiểm vận chuyển chuyên biệt</strong> bồi thường 100% giá trị bảo vật.</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* ── Thông Số Giám Định (Provenance & Specs) ── */}
-            <div className="border-t border-[#EAEAE8] pt-6 space-y-4">
-              <h3 className="text-xs font-mono uppercase tracking-[0.2em] text-[#111111] font-semibold">
-                Thông Số &amp; Chứng Thư Lưu Hành
-              </h3>
-              
-              <div className="divide-y divide-[#F0F0EE] text-xs">
-                {[
-                  { label: 'Thương Hiệu', value: product?.brand_name || product?.brand || 'Chính hãng' },
-                  { label: 'Phân Hạng Danh Mục', value: product?.category_name || product?.category || 'Tuyển tập đặc biệt' },
-                  { label: 'Tình Trạng Thực Tế', value: badgeLabel },
-                  { label: 'Quy Chuẩn Đóng Gói', value: 'Fullbox / Niêm phong hộp bảo hiểm Aura' },
-                  { label: 'Kiểm Định Viên', value: 'Hội đồng giám định độc lập Aura Vault' },
-                ].map(({ label, value }) => (
-                  <div key={label} className="py-2.5 flex justify-between items-center font-mono">
-                    <span className="text-[#888888] uppercase tracking-wider text-[11px]">{label}</span>
-                    <span className="text-[#111111] font-medium text-right">{value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* ── Mô Tả Chi Tiết ── */}
-            {product?.description && (
-              <div className="border-t border-[#EAEAE8] pt-6 space-y-3">
-                <h3 className="text-xs font-mono uppercase tracking-[0.2em] text-[#111111] font-semibold">
-                  Mô Tả Hiện Trạng Bảo Vật
-                </h3>
-                <p className="text-xs sm:text-sm text-[#666666] leading-relaxed font-light whitespace-pre-line">
-                  {product.description}
-                </p>
-              </div>
-            )}
+            {/* ── Trust Pillars, Specs & Description ── */}
+            <ProductTrustAndSpecs product={product} badgeLabel={badgeLabel} />
 
           </div>
         </div>
@@ -389,57 +284,6 @@ export default function ProductDetailPage() {
           setSuccess('Đã gửi đề xuất giá thành công! Người bán sẽ phản hồi sớm nhất.')
         }}
       />
-
-      {/* ── Lightbox Phóng To Ảnh Chi Tiết ── */}
-      {isLightboxOpen && (
-        <div
-          onClick={() => setIsLightboxOpen(false)}
-          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8"
-        >
-          <button
-            type="button"
-            onClick={() => setIsLightboxOpen(false)}
-            aria-label="Đóng ảnh phóng to"
-            className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white text-xl flex items-center justify-center transition-colors"
-          >
-            ×
-          </button>
-
-          {images.length > 1 && (
-            <>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setActiveImage((prev) => (prev - 1 + images.length) % images.length)
-                }}
-                aria-label="Ảnh trước"
-                className="absolute left-4 sm:left-8 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white text-lg flex items-center justify-center transition-colors"
-              >
-                ←
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setActiveImage((prev) => (prev + 1) % images.length)
-                }}
-                aria-label="Ảnh tiếp theo"
-                className="absolute right-4 sm:right-8 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white text-lg flex items-center justify-center transition-colors"
-              >
-                →
-              </button>
-            </>
-          )}
-
-          <img
-            src={mainImageSrc}
-            alt={product?.title}
-            onClick={(e) => e.stopPropagation()}
-            className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
-          />
-        </div>
-      )}
     </div>
   )
 }

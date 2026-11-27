@@ -83,3 +83,20 @@ export const CONDITION_MAP = {
   EXCELLENT: { label: "Tốt (Đã sử dụng)", color: "bg-amber-50 text-amber-700 border-amber-200" },
   FAIR: { label: "Khá (Dấu vết thời gian)", color: "bg-gray-50 text-gray-600 border-gray-200" },
 };
+
+/**
+ * Chuẩn hóa tên danh mục sang tiếng Việt
+ */
+export const formatCategoryName = (name) => {
+  if (!name) return "Tuyển Tập";
+  const upper = String(name).trim().toUpperCase();
+
+  if (upper.includes("WATCH") || upper.includes("HOROLOG")) return "Đồng Hồ";
+  if (upper.includes("BAG") || upper.includes("HANDBAG") || upper.includes("TOTE")) return "Túi Xách";
+  if (upper.includes("SNEAKER") || upper.includes("SHOE") || upper.includes("FOOTWEAR")) return "Giày & Sneaker";
+  if (upper.includes("STREETWEAR") || upper.includes("CLOTH") || upper.includes("APPAREL")) return "Thời Trang";
+  if (upper.includes("ACCESSOR")) return "Phụ Kiện";
+  if (upper.includes("JEWEL") || upper.includes("GEM")) return "Trang Sức";
+
+  return name;
+};
