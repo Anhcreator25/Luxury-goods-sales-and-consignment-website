@@ -25,7 +25,7 @@ function StatusBadge({ status, paymentStatus }) {
 
   if (status === 'completed' || status === 'delivered') {
     return (
-      <span className="inline-flex items-center px-3 py-1 text-[10px] font-mono uppercase tracking-widest bg-emerald-50 text-emerald-800 border border-emerald-200/80">
+      <span className="inline-flex items-center px-3 py-1 rounded-md text-[10px] font-mono uppercase tracking-widest bg-emerald-50 text-emerald-800 border border-emerald-200/80">
         ✓ Hoàn Thành
       </span>
     )
@@ -33,7 +33,7 @@ function StatusBadge({ status, paymentStatus }) {
 
   if (paymentStatus === 'paid' && (status === 'pending' || status === 'confirmed')) {
     return (
-      <span className="inline-flex items-center px-3 py-1 text-[10px] font-mono uppercase tracking-widest bg-purple-50 text-purple-800 border border-purple-200/80">
+      <span className="inline-flex items-center px-3 py-1 rounded-md text-[10px] font-mono uppercase tracking-widest bg-purple-50 text-purple-800 border border-purple-200/80">
         🛡️ Đã Ký Quỹ Sàn
       </span>
     )
@@ -41,7 +41,7 @@ function StatusBadge({ status, paymentStatus }) {
 
   const s = STATUS_MAP[status] || { label: status, cls: 'bg-stone-50 text-stone-700 border border-stone-200' }
   return (
-    <span className={`inline-flex items-center px-3 py-1 text-[10px] font-mono uppercase tracking-widest ${s.cls}`}>
+    <span className={`inline-flex items-center px-3 py-1 rounded-md text-[10px] font-mono uppercase tracking-widest ${s.cls}`}>
       {s.label}
     </span>
   )
@@ -63,7 +63,7 @@ export default function OrderCard({
   const canConfirmReceipt = isPaid && currentStatus !== 'completed' && currentStatus !== 'cancelled'
 
   return (
-    <div className="border border-[#E8E8E6] bg-white p-6 sm:p-8 hover:border-[#111111] transition-all duration-300">
+    <div className="rounded-xl border border-[#D4D4D0] bg-white p-6 sm:p-8 shadow-[0_2px_12px_rgba(17,17,17,0.04)] hover:border-[#111111] transition-all duration-300">
       {/* Order header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-6">
         <div>

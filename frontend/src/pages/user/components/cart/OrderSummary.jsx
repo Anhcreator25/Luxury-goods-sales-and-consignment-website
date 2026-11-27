@@ -16,7 +16,7 @@ export default function OrderSummary({
   const total = subtotal + commission;
 
   return (
-    <div className="border border-[#E5E5E3] bg-white p-6 space-y-5 self-start sticky top-24">
+    <div className="rounded-xl border border-[#D4D4D0] bg-white p-6 space-y-5 self-start sticky top-24 shadow-[0_2px_12px_rgba(17,17,17,0.04)]">
       <h2 className="text-xs font-mono uppercase tracking-wider text-[#444444] border-b border-[#E5E5E3] pb-3">
         Tóm Tắt Đơn Hàng
       </h2>
@@ -42,7 +42,7 @@ export default function OrderSummary({
         <button
           onClick={onProceed}
           disabled={disabled}
-          className="w-full bg-[#111111] text-white text-xs font-mono uppercase tracking-wider py-3 hover:bg-[#2A2A2A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="w-full rounded-lg bg-[#111111] text-white text-xs font-mono uppercase tracking-wider py-3 hover:bg-[#2A2A2A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           {proceedLabel}
         </button>

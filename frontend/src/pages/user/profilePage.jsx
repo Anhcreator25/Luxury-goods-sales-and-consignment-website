@@ -147,11 +147,11 @@ export default function ProfilePage() {
 
               {/* Stats */}
               <div className="grid grid-cols-2 gap-3 mb-6">
-                <div className="border border-[#E5E5E3] p-3 text-center">
+                <div className="rounded-lg border border-[#E5E5E3] p-3 text-center">
                   <p className="text-xl font-bold text-[#111111]">{orderCount}</p>
                   <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888] mt-0.5">Đơn Hàng</p>
                 </div>
-                <div className="border border-[#E5E5E3] p-3 text-center">
+                <div className="rounded-lg border border-[#E5E5E3] p-3 text-center">
                   <p className="text-xl font-bold text-[#111111]">{productCount}</p>
                   <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888] mt-0.5">Sản Phẩm Ký Gửi</p>
                 </div>
@@ -161,21 +161,21 @@ export default function ProfilePage() {
               <div className="space-y-2">
                 <Link
                   to="/my-orders"
-                  className="flex items-center justify-between w-full border border-[#E5E5E3] px-4 py-2.5 text-xs font-mono uppercase tracking-wider text-[#444444] hover:border-[#111111] hover:text-[#111111] transition-colors duration-150"
+                  className="flex items-center justify-between w-full rounded-lg border border-[#E5E5E3] px-4 py-2.5 text-xs font-mono uppercase tracking-wider text-[#444444] hover:border-[#111111] hover:text-[#111111] transition-colors duration-150"
                 >
                   <span>Đơn Hàng Của Tôi</span>
                   <span className="text-[#BBBBBB]">→</span>
                 </Link>
                 <Link
                   to="/my-products"
-                  className="flex items-center justify-between w-full border border-[#E5E5E3] px-4 py-2.5 text-xs font-mono uppercase tracking-wider text-[#444444] hover:border-[#111111] hover:text-[#111111] transition-colors duration-150"
+                  className="flex items-center justify-between w-full rounded-lg border border-[#E5E5E3] px-4 py-2.5 text-xs font-mono uppercase tracking-wider text-[#444444] hover:border-[#111111] hover:text-[#111111] transition-colors duration-150"
                 >
                   <span>Sản Phẩm Ký Gửi</span>
                   <span className="text-[#BBBBBB]">→</span>
                 </Link>
                 <Link
                   to="/incoming-orders"
-                  className="flex items-center justify-between w-full border border-[#E5E5E3] px-4 py-2.5 text-xs font-mono uppercase tracking-wider text-[#444444] hover:border-[#111111] hover:text-[#111111] transition-colors duration-150"
+                  className="flex items-center justify-between w-full rounded-lg border border-[#E5E5E3] px-4 py-2.5 text-xs font-mono uppercase tracking-wider text-[#444444] hover:border-[#111111] hover:text-[#111111] transition-colors duration-150"
                 >
                   <span>Đơn Từ Khách Mua</span>
                   <span className="text-[#BBBBBB]">→</span>
@@ -187,33 +187,49 @@ export default function ProfilePage() {
           {/* ── RIGHT COLUMN ── */}
           <div className="lg:col-span-2 space-y-6">
             {/* ── PROFILE FORM ── */}
-            <div className="border border-[#E5E5E3] bg-white p-6">
-              <h2 className="text-xs font-mono uppercase tracking-widest text-[#111111] mb-5">Cập Nhật Hồ Sơ</h2>
+            <div className="rounded-xl border border-[#D4D4D0] bg-white p-6 shadow-[0_2px_12px_rgba(17,17,17,0.04)]">
+              <h2 className="text-xs font-mono uppercase tracking-widest text-[#111111] mb-5 font-semibold">Cập Nhật Hồ Sơ</h2>
 
               {profileError && (
-                <div className="mb-4 bg-[#FDF2F2] border-l-2 border-[#D93838] px-4 py-3">
+                <div className="mb-4 rounded-lg bg-[#FDF2F2] border-l-2 border-[#D93838] px-4 py-3">
                   <p className="text-sm text-[#9A2222]">{profileError}</p>
                 </div>
               )}
               {profileSuccess && (
-                <div className="mb-4 bg-[#F2F8F4] border-l-2 border-[#1E7E34] px-4 py-3">
+                <div className="mb-4 rounded-lg bg-[#F2F8F4] border-l-2 border-[#1E7E34] px-4 py-3">
                   <p className="text-sm text-[#155724]">{profileSuccess}</p>
                 </div>
               )}
 
               <form onSubmit={handleProfileSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-mono uppercase tracking-wider text-[#444444] mb-1.5">
-                    Họ Và Tên <span className="text-[#D93838]">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={profileForm.name}
-                    onChange={handleProfileChange}
-                    placeholder="Nguyễn Văn A"
-                    className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#111111] transition-colors duration-150"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-mono uppercase tracking-wider text-[#444444] mb-1.5">
+                      Họ Và Tên <span className="text-[#D93838]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={profileForm.name}
+                      onChange={handleProfileChange}
+                      placeholder="Nguyễn Văn A"
+                      className="w-full rounded-lg border border-[#D4D4D0] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#111111] transition-colors duration-150"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-mono uppercase tracking-wider text-[#444444] mb-1.5">
+                      Số Điện Thoại
+                    </label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={profileForm.phone}
+                      onChange={handleProfileChange}
+                      placeholder="0912 345 678"
+                      className="w-full rounded-lg border border-[#D4D4D0] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#111111] transition-colors duration-150"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -225,23 +241,9 @@ export default function ProfilePage() {
                     name="email"
                     value={profileForm.email}
                     disabled
-                    className="w-full border border-[#E5E5E3] bg-[#F0F0EE] px-4 py-2.5 text-sm text-[#888888] cursor-not-allowed font-mono"
+                    className="w-full rounded-lg border border-[#E5E5E3] bg-[#F0F0EE] px-4 py-2.5 text-sm text-[#888888] cursor-not-allowed font-mono"
                   />
                   <p className="text-[10px] text-[#AAAAAA] mt-1 font-mono">Email không thể thay đổi.</p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-mono uppercase tracking-wider text-[#444444] mb-1.5">
-                    Số Điện Thoại
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={profileForm.phone}
-                    onChange={handleProfileChange}
-                    placeholder="0912 345 678"
-                    className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#111111] transition-colors duration-150"
-                  />
                 </div>
 
                 <div>
@@ -254,14 +256,14 @@ export default function ProfilePage() {
                     value={profileForm.address}
                     onChange={handleProfileChange}
                     placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
-                    className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#111111] transition-colors duration-150"
+                    className="w-full rounded-lg border border-[#D4D4D0] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#111111] transition-colors duration-150"
                   />
                 </div>
 
                 <div className="pt-2">
                   <button
                     type="submit"
-                    className="bg-[#111111] text-white text-xs font-mono uppercase tracking-widest px-8 py-3 hover:bg-[#2A2A2A] transition-colors duration-150"
+                    className="rounded-lg bg-[#111111] text-white text-xs font-mono uppercase tracking-widest px-8 py-2.5 hover:bg-[#2A2A2A] transition-colors duration-150 cursor-pointer"
                   >
                     Lưu Thay Đổi
                   </button>
@@ -273,8 +275,8 @@ export default function ProfilePage() {
             <BankAccountsSection />
 
             {/* ── CHANGE PASSWORD ── */}
-            <div className="border border-[#E5E5E3] bg-white p-6">
-              <h2 className="text-xs font-mono uppercase tracking-widest text-[#111111] mb-5">Đổi Mật Khẩu</h2>
+            <div className="rounded-xl border border-[#D4D4D0] bg-white p-6 shadow-[0_2px_12px_rgba(17,17,17,0.04)]">
+              <h2 className="text-xs font-mono uppercase tracking-widest text-[#111111] mb-5 font-semibold">Đổi Mật Khẩu</h2>
 
               {pwMsg && (
                 <div className={`mb-4 px-4 py-3 border-l-2 ${

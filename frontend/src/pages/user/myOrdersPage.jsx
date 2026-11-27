@@ -226,9 +226,9 @@ export default function MyOrdersPage() {
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
         {/* Page Header */}
-        <div className="mb-10">
-          <p className="text-[10px] font-mono uppercase tracking-widest text-[#888888] mb-2">Tài Khoản Của Bạn</p>
-          <h1 className="text-2xl sm:text-3xl font-light tracking-tight text-[#111111] uppercase font-sans">Đơn Hàng Của Tôi</h1>
+        <div className="mb-8">
+          <p className="text-[10px] font-mono uppercase tracking-widest text-[#888888] mb-1.5">Tài Khoản Của Bạn</p>
+          <h1 className="text-2xl font-sans font-bold tracking-tight text-[#111111] uppercase">Đơn Hàng Của Tôi</h1>
         </div>
 
         {/* Error Alert */}
@@ -277,7 +277,7 @@ export default function MyOrdersPage() {
         {activeSection === 'orders' ? (
           <>
             {/* Filter Tabs */}
-            <div className="flex border-b border-[#E8E8E6] mb-8 overflow-x-auto">
+            <div className="flex flex-wrap gap-2 mb-8">
               {TABS.map(tab => {
                 const count = tab.key === 'all'
                   ? orders.length
@@ -287,14 +287,14 @@ export default function MyOrdersPage() {
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`flex-shrink-0 px-5 py-3.5 text-xs font-mono uppercase tracking-widest border-b-2 transition-colors duration-200 cursor-pointer ${
+                    className={`flex-shrink-0 px-3.5 py-2 rounded-lg text-[11px] font-mono uppercase tracking-wider border transition-all duration-200 cursor-pointer ${
                       activeTab === tab.key
-                        ? 'border-[#111111] text-[#111111] font-semibold'
-                        : 'border-transparent text-[#888888] hover:text-[#111111]'
+                        ? 'bg-[#111111] border-[#111111] text-white font-semibold'
+                        : 'bg-white border-[#D4D4D0] text-[#666666] hover:border-[#111111] hover:text-[#111111]'
                     }`}
                   >
                     {tab.label}
-                    <span className="ml-1.5 text-[10px]">({count})</span>
+                    <span className="ml-1.5 text-[10px] opacity-80">({count})</span>
                   </button>
                 )
               })}

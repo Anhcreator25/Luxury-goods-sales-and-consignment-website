@@ -16,9 +16,10 @@ const getDiscountPercent = (originalPrice, sellingPrice) =>
     ? Math.round(((originalPrice - sellingPrice) / originalPrice) * 100)
     : 0;
 
-function ProductImageFrame({ product }) {
-  const imageUrl =
-    product.primary_image || getImageUrl(product.images?.[0]) || FALLBACK_IMAGE;
+function ProductImageFrame({ product, emptyImageText }) {
+  const rawImageUrl = product.primary_image || getImageUrl(product.images?.[0]);
+  const showEmptyPlaceholder = !rawImageUrl && Boolean(emptyImageText);
+  const imageUrl = rawImageUrl || FALLBACK_IMAGE;
   const secondaryImageUrl =
     product.images?.length > 1 ? getImageUrl(product.images[1]) : null;
   const discountPercent = getDiscountPercent(
@@ -28,16 +29,31 @@ function ProductImageFrame({ product }) {
 
   return (
     <div className="aspect-[4/5] w-full bg-[#F9F9F8] overflow-hidden relative">
-      <img
-        src={imageUrl}
-        alt={product.title}
-        loading="lazy"
-        decoding="async"
-        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
-        onError={(e) => {
-          e.target.src = FALLBACK_IMAGE;
-        }}
-      />
+      {showEmptyPlaceholder ? (
+        <div className="w-full h-full flex items-center justify-center bg-[#F7F7F6] p-4">
+          <div className="w-full h-full border border-dashed border-[#D4D4D0] rounded-lg flex flex-col items-center justify-center gap-2 px-4 text-center">
+            <svg className="w-7 h-7 text-[#AAAAAA]" fill="none" stroke="currentColor" strokeWidth={1.3} viewBox="0 0 24 24">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 15l-5-5L5 21" />
+            </svg>
+            <span className="text-xs font-mono text-[#888888] tracking-wide">
+              {emptyImageText}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <img
+          src={imageUrl}
+          alt={product.title}
+          loading="lazy"
+          decoding="async"
+          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
+          onError={(e) => {
+            e.target.src = FALLBACK_IMAGE;
+          }}
+        />
+      )}
 
       {secondaryImageUrl && secondaryImageUrl !== imageUrl && (
         <img
@@ -114,7 +130,7 @@ function ProductInfo({ product }) {
   );
 }
 
-function ProductCard({ product, onSelect, onDetail }) {
+function ProductCard({ product, onSelect, onDetail, emptyImageText }) {
   const handleSelect = () => {
     if (onDetail) onDetail(product.id || product);
     else if (onSelect) onSelect(product.id);
@@ -133,7 +149,7 @@ function ProductCard({ product, onSelect, onDetail }) {
       }}
       className="group bg-white rounded-xl overflow-hidden border border-[#D4D4D0] shadow-[0_2px_12px_rgba(17,17,17,0.04)] hover:border-[#111111] hover:shadow-[0_16px_40px_-12px_rgba(17,17,17,0.12)] hover:-translate-y-0.5 transition-all duration-500 ease-out flex flex-col justify-between cursor-pointer"
     >
-      <ProductImageFrame product={product} />
+      <ProductImageFrame product={product} emptyImageText={emptyImageText} />
       <ProductInfo product={product} />
     </div>
   );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatPrice } from '../../../../utils/formatters';
+import { formatPrice, formatConditionShort } from '../../../../utils/formatters';
 
 export default function CartItemCard({
   item,
@@ -19,8 +19,8 @@ export default function CartItemCard({
 
   return (
     <div
-      className={`flex gap-3 sm:gap-4 border p-4 transition-colors bg-white ${
-        isSelected ? 'border-[#111111]' : 'border-[#E5E5E3] hover:border-[#CCCCCC]'
+      className={`flex gap-3 sm:gap-4 rounded-xl border p-4 transition-all bg-white shadow-[0_2px_10px_rgba(17,17,17,0.03)] ${
+        isSelected ? 'border-[#111111] ring-1 ring-[#111111]/10' : 'border-[#D4D4D0] hover:border-[#111111]/50'
       }`}
     >
       {/* Checkbox Select */}
@@ -35,7 +35,7 @@ export default function CartItemCard({
       </div>
 
       {/* Thumbnail */}
-      <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 bg-[#F5F5F4] overflow-hidden">
+      <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-lg bg-[#F5F5F4] overflow-hidden">
         {thumb ? (
           <img src={thumb} alt={title} className="w-full h-full object-cover" />
         ) : (
@@ -60,8 +60,8 @@ export default function CartItemCard({
           {title}
         </p>
         {condition && (
-          <span className="inline-block mt-1 text-[10px] font-mono uppercase tracking-wider border border-[#E5E5E3] px-2 py-0.5 text-[#666666]">
-            {condition}
+          <span className="inline-block mt-1 text-[10px] font-mono uppercase tracking-wider rounded-md border border-[#E5E5E3] px-2 py-0.5 text-[#666666]">
+            {formatConditionShort(condition)}
           </span>
         )}
         <p className="mt-2 text-sm font-mono text-[#111111]">
@@ -124,7 +124,7 @@ export default function CartItemCard({
           <button
             type="button"
             onClick={() => onCheckoutSingle(item)}
-            className="text-xs font-mono uppercase tracking-wider text-[#111111] hover:text-[#2A2A2A] font-semibold flex items-center gap-1 bg-[#F5F5F4] hover:bg-[#EBEBEA] px-3 py-1.5 transition-colors border border-[#E5E5E3] cursor-pointer"
+            className="text-[11px] font-mono uppercase tracking-wider text-[#111111] hover:text-[#2A2A2A] font-semibold flex items-center gap-1 bg-[#F5F5F4] hover:bg-[#EBEBEA] px-3 py-1.5 rounded-lg transition-colors border border-[#E5E5E3] cursor-pointer"
           >
             <span>Mua riêng món này</span>
             <span className="text-[10px]">→</span>
@@ -138,7 +138,7 @@ export default function CartItemCard({
           onClick={() => onDelete(itemId)}
           disabled={isDeleting}
           aria-label="Xóa sản phẩm"
-          className="w-8 h-8 flex items-center justify-center border border-[#E5E5E3] text-[#666666] hover:border-[#D93838] hover:text-[#D93838] transition-colors disabled:opacity-40 cursor-pointer"
+          className="w-8 h-8 rounded-lg flex items-center justify-center border border-[#E5E5E3] text-[#666666] hover:border-[#D93838] hover:text-[#D93838] transition-colors disabled:opacity-40 cursor-pointer"
         >
           {isDeleting ? (
             <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">

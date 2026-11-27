@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
+import ProductCard from '../../components/ProductCard'
 import { listingServices } from '../../services'
 import { formatPrice } from '../../utils/formatters'
 import { PLATFORM_CONFIG } from '../../config/platformConfig'
@@ -294,8 +295,8 @@ export default function MyProductsPage() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
         {/* Page Header */}
         <div className="mb-8">
-          <p className="text-[10px] font-mono uppercase tracking-widest text-[#888888] mb-1">Tài Khoản</p>
-          <h1 className="text-2xl font-bold tracking-tight text-[#111111] uppercase">Sản Phẩm Của Tôi</h1>
+          <p className="text-[10px] font-mono uppercase tracking-widest text-[#888888] mb-1.5">Tài Khoản</p>
+          <h1 className="text-2xl font-sans font-bold tracking-tight text-[#111111] uppercase">Sản Phẩm Của Tôi</h1>
         </div>
 
         {/* Tabs */}
@@ -354,10 +355,10 @@ export default function MyProductsPage() {
                 {products.map((product) => {
                   const pid = product.id || product._id
                   return (
-                    <div key={pid} className="border border-[#E5E5E3] bg-white hover:border-[#111111] transition-colors duration-150">
+                    <div key={pid} className="rounded-xl border border-[#D4D4D0] bg-white shadow-[0_2px_10px_rgba(17,17,17,0.03)] hover:border-[#111111] transition-all duration-200">
                       <div className="flex items-center gap-4 p-4">
                         {/* Image — backend returns images as [{id, image_url, is_primary}] */}
-                        <div className="w-16 h-16 bg-[#F0F0EE] border border-[#E5E5E3] flex-shrink-0 overflow-hidden">
+                        <div className="w-16 h-16 rounded-lg bg-[#F0F0EE] border border-[#E5E5E3] flex-shrink-0 overflow-hidden">
                           {(() => {
                           
                             const src = product.primary_image || product.image_url ||
@@ -398,14 +399,16 @@ export default function MyProductsPage() {
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <button
                             onClick={() => handleEdit(product)}
-                            className="w-8 h-8 border border-[#E5E5E3] flex items-center justify-center text-[#444444] hover:border-[#111111] hover:text-[#111111] transition-colors duration-150 text-sm"
+                            className="w-8 h-8 rounded-lg border border-[#E5E5E3] flex items-center justify-center text-[#444444] hover:border-[#111111] hover:text-[#111111] transition-colors duration-150 cursor-pointer"
                             title="Chỉnh sửa"
                           >
-                            ✏
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                            </svg>
                           </button>
                           <button
                             onClick={() => handleDeleteClick(pid)}
-                            className="w-8 h-8 border border-[#E5E5E3] flex items-center justify-center text-[#888888] hover:border-[#D93838] hover:text-[#D93838] transition-colors duration-150 text-sm"
+                            className="w-8 h-8 rounded-lg border border-[#E5E5E3] flex items-center justify-center text-[#888888] hover:border-[#D93838] hover:text-[#D93838] transition-colors duration-150 text-sm cursor-pointer"
                             title="Xóa"
                           >
                             ✕
@@ -444,7 +447,8 @@ export default function MyProductsPage() {
 
         {/* ── TAB 2: ADD / EDIT FORM ── */}
         {activeTab === 'form' && (
-          <div className="max-w-2xl">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-7 rounded-xl border border-[#D4D4D0] bg-white p-6 sm:p-8 shadow-[0_2px_12px_rgba(17,17,17,0.04)]">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-sm font-mono uppercase tracking-widest text-[#111111]">
                 {isUpdateMode ? 'Chỉnh Sửa Sản Phẩm' : 'Thêm Sản Phẩm Mới'}
@@ -483,7 +487,7 @@ export default function MyProductsPage() {
                   onChange={handleFormChange}
                   required
                   placeholder="Ví dụ: Chanel Classic Flap Bag Medium"
-                  className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#C5A880] transition-colors duration-150"
+                  className="w-full rounded-lg border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#111111] transition-colors duration-150"
                 />
               </div>
 
@@ -506,7 +510,7 @@ export default function MyProductsPage() {
                         brand: found && found.id ? found.label : (selId === null ? '' : prev.brand)
                       }))
                     }}
-                    className="border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] focus:outline-none focus:border-[#C5A880] transition-colors duration-150 appearance-none"
+                    className="rounded-lg border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] focus:outline-none focus:border-[#111111] transition-colors duration-150 appearance-none"
                   >
                     {brandList.map(b => (
                       <option key={String(b.id)} value={b.id || ''}>{b.label}</option>
@@ -554,7 +558,7 @@ export default function MyProductsPage() {
                     required
                     min={0}
                     placeholder="Ví dụ: 25000000"
-                    className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#C5A880] transition-colors duration-150"
+                    className="w-full rounded-lg border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#111111] transition-colors duration-150"
                   />
                   {form.price && Number(form.price) > 0 && (
                     <div className="mt-2 p-2.5 bg-[#F9F9F8] border border-[#E5E5E3] space-y-1 text-xs font-mono">
@@ -580,7 +584,7 @@ export default function MyProductsPage() {
                     onChange={handleFormChange}
                     min={0}
                     placeholder="Để trống = bằng giá bán"
-                    className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#C5A880] transition-colors duration-150"
+                    className="w-full rounded-lg border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] placeholder-[#BBBBBB] focus:outline-none focus:border-[#111111] transition-colors duration-150"
                   />
                 </div>
               </div>
@@ -595,7 +599,7 @@ export default function MyProductsPage() {
                     name="category_id"
                     value={form.category_id}
                     onChange={handleFormChange}
-                    className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] focus:outline-none focus:border-[#C5A880] transition-colors duration-150 appearance-none"
+                    className="w-full rounded-lg border border-[#D4D4D0] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] focus:outline-none focus:border-[#111111] transition-colors duration-150 appearance-none"
                   >
                     {CATEGORIES.map(c => (
                       <option key={c.id} value={c.id}>{c.label}</option>
@@ -610,7 +614,7 @@ export default function MyProductsPage() {
                     name="condition_grade"
                     value={form.condition_grade}
                     onChange={handleFormChange}
-                    className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] focus:outline-none focus:border-[#C5A880] transition-colors duration-150 appearance-none"
+                    className="w-full rounded-lg border border-[#D4D4D0] bg-[#FAFAFA] px-4 py-2.5 text-sm text-[#111111] focus:outline-none focus:border-[#111111] transition-colors duration-150 appearance-none"
                   >
                     {CONDITIONS.map(c => (
                       <option key={c.value} value={c.value}>{c.label}</option>
@@ -671,7 +675,7 @@ export default function MyProductsPage() {
                   <button
                     type="button"
                     onClick={() => setForm(prev => ({ ...prev, imageUrls: [...prev.imageUrls, ''] }))}
-                    className="mt-2 w-full border border-dashed border-[#E5E5E3] py-2 text-xs font-mono uppercase tracking-wider text-[#888888] hover:border-[#111111] hover:text-[#111111] transition-colors duration-150"
+                    className="mt-2 w-full rounded-lg border border-dashed border-[#D4D4D0] py-2 text-xs font-mono uppercase tracking-wider text-[#888888] hover:border-[#111111] hover:text-[#111111] transition-colors duration-150 cursor-pointer"
                   >
                     + Thêm Ảnh
                   </button>
@@ -703,7 +707,7 @@ export default function MyProductsPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full bg-[#111111] text-white text-xs font-mono uppercase tracking-widest py-3.5 hover:bg-[#2A2A2A] transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full rounded-lg bg-[#111111] text-white text-xs font-mono uppercase tracking-widest py-3.5 hover:bg-[#2A2A2A] transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {submitting
                     ? (isUpdateMode ? 'Đang Cập Nhật...' : 'Đang Gửi...')
@@ -711,6 +715,32 @@ export default function MyProductsPage() {
                 </button>
               </div>
             </form>
+            </div>
+
+            {/* Live Preview Column */}
+            <div className="lg:col-span-5 lg:sticky lg:top-24">
+              <div className="rounded-xl border border-[#D4D4D0] bg-white p-6 shadow-[0_2px_12px_rgba(17,17,17,0.04)]">
+                <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-[#888888] mb-4 text-center">
+                  Xem Trước Hiển Thị Trên Sàn
+                </p>
+                <div className="max-w-[290px] mx-auto pointer-events-none">
+                  <ProductCard
+                    emptyImageText="Hãy thêm ảnh vào"
+                    product={{
+                      id: 'preview',
+                      title: form.title.trim() || 'Tên sản phẩm của bạn sẽ hiển thị ở đây',
+                      brand_name: form.brand.trim() || 'Maison',
+                      category_name:
+                        CATEGORIES.find((c) => c.id === Number(form.category_id))?.label || 'Phụ Kiện',
+                      selling_price: Number(form.price) || 0,
+                      original_price: Number(form.original_price) || Number(form.price) || 0,
+                      condition_grade: form.condition_grade,
+                      images: form.imageUrls.filter((u) => u.trim() !== ''),
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

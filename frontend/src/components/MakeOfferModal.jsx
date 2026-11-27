@@ -66,7 +66,7 @@ export default function MakeOfferModal({ isOpen, onClose, product, onSuccess }) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white border border-[#E5E5E3] max-w-md w-full p-6 shadow-2xl relative font-sans">
+      <div className="bg-white rounded-2xl border border-[#D4D4D0] max-w-md w-full p-6 shadow-2xl relative font-sans">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -89,7 +89,7 @@ export default function MakeOfferModal({ isOpen, onClose, product, onSuccess }) 
         </div>
 
         {/* Current Price Banner */}
-        <div className="bg-[#FBFBFA] border border-[#EAEAE8] p-3.5 mb-5 flex justify-between items-center font-mono">
+        <div className="rounded-xl bg-[#FBFBFA] border border-[#EAEAE8] px-4 py-3 mb-4 flex justify-between items-center font-mono">
           <span className="text-xs text-[#777777] uppercase tracking-wider">Giá Niêm Yết:</span>
           <span className="text-sm font-semibold text-[#111111]">{formatPrice(currentPrice)}</span>
         </div>
@@ -112,7 +112,7 @@ export default function MakeOfferModal({ isOpen, onClose, product, onSuccess }) 
                   key={pct}
                   type="button"
                   onClick={() => handleQuickPercent(pct)}
-                  className="py-1.5 px-2 bg-white border border-[#E5E5E3] hover:border-[#111111] text-xs font-mono text-[#333333] hover:text-[#111111] transition-all cursor-pointer"
+                  className="py-2 px-2 rounded-lg bg-white border border-[#D4D4D0] hover:border-[#111111] text-[11px] font-mono text-[#333333] hover:text-[#111111] transition-all cursor-pointer"
                 >
                   Giảm {pct}% (-{formatPrice(Math.round(currentPrice * (pct / 100)))})
                 </button>
@@ -132,7 +132,7 @@ export default function MakeOfferModal({ isOpen, onClose, product, onSuccess }) 
               value={offerPrice}
               onChange={(e) => setOfferPrice(e.target.value)}
               placeholder="Ví dụ: 650000000"
-              className="w-full border border-[#E5E5E3] bg-[#FAFAFA] px-4 py-2.5 text-sm font-mono text-[#111111] focus:outline-none focus:border-[#111111]"
+              className="w-full rounded-lg border border-[#D4D4D0] bg-[#FAFAFA] px-4 py-2.5 text-sm font-mono text-[#111111] focus:outline-none focus:border-[#111111]"
             />
             {offerPrice && Number(offerPrice) > 0 && (
               <p className="text-[11px] font-mono text-[#28A745] mt-1">
@@ -151,7 +151,7 @@ export default function MakeOfferModal({ isOpen, onClose, product, onSuccess }) 
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="VD: Em thiện chí chốt cọc trong ngày nếu anh/chị đồng ý giá này ạ."
-              className="w-full border border-[#E5E5E3] bg-[#FAFAFA] p-3 text-xs text-[#111111] focus:outline-none focus:border-[#111111]"
+              className="w-full rounded-lg border border-[#D4D4D0] bg-[#FAFAFA] p-3 text-xs text-[#111111] focus:outline-none focus:border-[#111111]"
             />
           </div>
 
@@ -160,14 +160,14 @@ export default function MakeOfferModal({ isOpen, onClose, product, onSuccess }) 
             <button
               type="button"
               onClick={onClose}
-              className="w-1/3 py-3 border border-[#E5E5E3] text-xs font-mono uppercase tracking-widest text-[#666666] hover:bg-[#F5F5F3] cursor-pointer"
+              className="w-1/3 py-2.5 rounded-lg border border-[#D4D4D0] text-xs font-mono uppercase tracking-widest text-[#666666] hover:bg-[#F5F5F3] cursor-pointer"
             >
               Hủy
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="w-2/3 py-3 bg-[#111111] text-white hover:bg-[#2B2B2B] text-xs font-mono uppercase tracking-[0.2em] transition-all cursor-pointer shadow-md disabled:opacity-50"
+              className="w-2/3 py-2.5 rounded-lg bg-[#111111] text-white hover:bg-[#2B2B2B] text-xs font-mono uppercase tracking-[0.2em] transition-all cursor-pointer shadow-sm disabled:opacity-50"
             >
               {loading ? 'Đang Gửi...' : 'Gửi Đề Xuất Giá →'}
             </button>

@@ -343,8 +343,8 @@ export default function CartPage() {
               <p className="text-xs font-mono uppercase tracking-widest text-[#444444] mb-1">
                 Aura Vault
               </p>
-              <h1 className="text-2xl sm:text-3xl font-light text-[#111111] tracking-tight">
-                GIỎ HÀNG CỦA BẠN
+              <h1 className="text-2xl sm:text-3xl font-serif font-normal text-[#111111] tracking-wide">
+                Giỏ Hàng Của Bạn
               </h1>
             </div>
 
@@ -373,7 +373,7 @@ export default function CartPage() {
               <div className="lg:flex lg:gap-8 items-start">
                 {/* Left: Cart Items List */}
                 <div className="flex-1 space-y-3 mb-8 lg:mb-0">
-                  <div className="flex items-center justify-between border border-[#E5E5E3] bg-white px-4 py-3 text-xs font-mono">
+                  <div className="flex items-center justify-between rounded-xl border border-[#D4D4D0] bg-white px-4 py-3 text-xs font-mono shadow-[0_2px_10px_rgba(17,17,17,0.03)]">
                     <label className="flex items-center gap-2 cursor-pointer select-none">
                       <input
                         type="checkbox"

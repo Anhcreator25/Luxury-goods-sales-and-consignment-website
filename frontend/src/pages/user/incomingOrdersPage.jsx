@@ -64,44 +64,59 @@ function IncomingOrderCard({ order, onConfirm }) {
   const oid = order.id || order._id || ''
 
   return (
-    <div className="border border-[#E5E5E3] bg-white hover:border-[#111111] transition-colors duration-150">
-      <div className="p-6">
+    <div className="rounded-xl border border-[#D4D4D0] bg-white shadow-[0_2px_12px_rgba(17,17,17,0.04)] hover:border-[#111111] transition-all duration-200">
+      <div className="p-5 sm:p-6">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div>
-            <p className="text-[10px] font-mono uppercase tracking-wider text-[#444444] mb-1">Mã Đơn</p>
-            <p className="text-sm font-semibold text-[#111111]">{oid}</p>
+            <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888] mb-0.5">Mã Đơn</p>
+            <p className="text-sm font-semibold text-[#111111]">#{oid}</p>
             <p className="text-xs text-[#888888] mt-0.5">{formatDate(order.created_at)}</p>
           </div>
           <StatusBadge status={order.status} />
         </div>
 
         {/* Buyer Info */}
-        <div className="bg-[#F5F5F3] border border-[#E5E5E3] px-4 py-3 mb-4 space-y-1">
+        <div className="rounded-lg bg-[#F7F7F5] border border-[#E5E5E3] px-4 py-3 mb-3.5 space-y-1.5">
           <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888]">Thông Tin Khách Mua Hàng</p>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-            <p className="text-sm font-semibold text-[#111111]">
-              👤 {order.buyer_name || order.buyer?.name || 'Khách Hàng'}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+            <p className="text-sm font-semibold text-[#111111] flex items-center gap-2">
+              <svg className="w-3.5 h-3.5 text-[#666666] shrink-0" fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              </svg>
+              <span>{order.buyer_name || order.buyer?.name || 'Khách Hàng'}</span>
             </p>
             {order.phone_number && (
-              <p className="text-xs font-mono text-[#555555]">
-                📞 SĐT: <strong className="text-[#111111]">{order.phone_number}</strong>
+              <p className="text-xs font-mono text-[#555555] flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5 text-[#666666] shrink-0" fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+                </svg>
+                <span>SĐT: <strong className="text-[#111111]">{order.phone_number}</strong></span>
               </p>
             )}
           </div>
-          <p className="text-xs text-[#888888] font-mono">
-            ✉️ {order.buyer_email || order.buyer?.email || '—'}
+          <p className="text-xs text-[#666666] font-mono flex items-center gap-2">
+            <svg className="w-3.5 h-3.5 text-[#888888] shrink-0" fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+            </svg>
+            <span>{order.buyer_email || order.buyer?.email || '—'}</span>
           </p>
           {order.shipping_address && (
-            <p className="text-xs text-[#555555] font-mono pt-1 border-t border-[#EAEAE8] mt-1">
-              📍 Giao đến: <span className="text-[#111111]">{order.shipping_address}</span>
+            <p className="text-xs text-[#555555] font-mono pt-1.5 border-t border-[#EAEAE8] mt-1 flex items-center gap-2">
+              <svg className="w-3.5 h-3.5 text-[#666666] shrink-0" fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+              </svg>
+              <span>Giao đến: <span className="text-[#111111]">{order.shipping_address}</span></span>
             </p>
           )}
         </div>
 
         {/* Escrow Vault Assurance Badge for Seller */}
-        <div className="bg-[#F4F8FA] border border-[#D0E2EB] px-3.5 py-2.5 mb-4 flex items-center gap-2">
-          <span className="text-sm">🛡️</span>
+        <div className="rounded-lg bg-[#F4F8FA] border border-[#D0E2EB] px-3.5 py-2.5 mb-4 flex items-center gap-2.5">
+          <svg className="w-4 h-4 text-[#1C5370] shrink-0" fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+          </svg>
           <p className="text-xs text-[#1C5370] font-mono">
             <strong>Bảo Đảm Ký Quỹ:</strong> Tiền mua hàng đã được bảo đảm tại Quỹ Aura Vault. Tiền sẽ được giải ngân về STK của bạn sau khi người mua nhận hàng.
           </p>
@@ -264,7 +279,7 @@ export default function IncomingOrdersPage() {
                 : 'border-transparent text-[#777777] hover:text-[#111111]'
             }`}
           >
-            <span>Đề Xuất Giá (Offers)</span>
+            <span>Đề Xuất Giá</span>
             {offers.filter(o => o.status === 'pending').length > 0 && (
               <span className="bg-[#111111] text-white text-[9px] px-2 py-0.5 rounded-full">
                 {offers.filter(o => o.status === 'pending').length} mới
@@ -277,15 +292,15 @@ export default function IncomingOrdersPage() {
           <>
             {/* Stats Row */}
             <div className="grid grid-cols-3 gap-4 mb-8">
-              <div className="border border-[#E5E5E3] bg-white p-5 text-center">
+              <div className="rounded-xl border border-[#D4D4D0] bg-white p-5 text-center shadow-[0_2px_10px_rgba(17,17,17,0.03)]">
                 <p className="text-2xl font-bold text-[#111111]">{loading ? '—' : totalOrders}</p>
                 <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888] mt-1">Tổng Đơn</p>
               </div>
-              <div className="border border-[#E5E5E3] bg-white p-5 text-center">
+              <div className="rounded-xl border border-[#D4D4D0] bg-white p-5 text-center shadow-[0_2px_10px_rgba(17,17,17,0.03)]">
                 <p className="text-2xl font-bold text-amber-600">{loading ? '—' : pendingOrders}</p>
                 <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888] mt-1">Đang Chờ</p>
               </div>
-              <div className="border border-[#E5E5E3] bg-white p-5 text-center">
+              <div className="rounded-xl border border-[#D4D4D0] bg-white p-5 text-center shadow-[0_2px_10px_rgba(17,17,17,0.03)]">
                 <p className="text-2xl font-bold text-emerald-600">{loading ? '—' : completedOrders}</p>
                 <p className="text-[10px] font-mono uppercase tracking-wider text-[#888888] mt-1">Hoàn Thành</p>
               </div>
@@ -329,11 +344,11 @@ export default function IncomingOrdersPage() {
               </div>
             ) : (
               offers.map((offer) => (
-                <div key={offer.id} className="border border-[#E5E5E3] bg-white p-5 space-y-4 shadow-sm font-sans">
+                <div key={offer.id} className="rounded-xl border border-[#D4D4D0] bg-white p-5 space-y-4 shadow-[0_2px_12px_rgba(17,17,17,0.04)] font-sans">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F0F0EE] pb-3">
                     <div className="flex items-center gap-3">
                       {offer.primary_image && (
-                        <img src={offer.primary_image} alt="" className="w-12 h-12 object-cover border border-[#E5E5E3]" />
+                        <img src={offer.primary_image} alt="" className="w-12 h-12 rounded-lg object-cover border border-[#E5E5E3]" />
                       )}
                       <div>
                         <h4 className="text-sm font-serif font-medium text-[#111111]">{offer.listing_title}</h4>
@@ -344,7 +359,7 @@ export default function IncomingOrdersPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className={`text-[10px] font-mono uppercase px-2.5 py-1 border ${
+                      <span className={`text-[10px] font-mono uppercase px-2.5 py-1 rounded-md border ${
                         offer.status === 'accepted' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                         offer.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
                         'bg-amber-50 text-amber-700 border-amber-200'
@@ -382,7 +397,7 @@ export default function IncomingOrdersPage() {
                     <div className="flex justify-end gap-3 pt-2 border-t border-[#F0F0EE]">
                       <button
                         onClick={() => handleRespondOffer(offer.id, 'rejected')}
-                        className="px-4 py-2 text-xs font-mono uppercase tracking-wider text-[#9A2222] border border-[#D93838]/30 hover:bg-[#FDF2F2] cursor-pointer"
+                        className="px-4 py-2 rounded-lg text-xs font-mono uppercase tracking-wider text-[#9A2222] border border-[#D93838]/30 hover:bg-[#FDF2F2] cursor-pointer"
                       >
                         Từ Chối
                       </button>
