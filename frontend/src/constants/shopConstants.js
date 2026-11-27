@@ -1,10 +1,10 @@
 export const CATEGORIES = [
   { label: 'Tất Cả Sản Phẩm', id: null, desc: 'Toàn bộ các tác phẩm xa xỉ đã qua kiểm định nghiêm ngặt từ các thương hiệu hàng đầu thế giới.' },
   { label: 'Túi Xách Thượng Lưu', id: 1, desc: 'Những kiệt tác túi xách kinh điển từ Hermès Birkin, Chanel Classic Flap, Louis Vuitton, Dior.' },
-  { label: 'Sneaker & Giày Hiệu', id: 2, desc: 'Bộ sưu tập giày hiếm, phiên bản giới hạn chính hãng Jordan, Dior, Nike x Travis Scott.' },
+  { label: 'Sneaker - Giày Hiệu', id: 2, desc: 'Bộ sưu tập giày hiếm, phiên bản giới hạn chính hãng Jordan, Dior, Nike x Travis Scott.' },
   { label: 'Đồng Hồ Xa Xỉ', id: 3, desc: 'Cỗ máy thời gian đỉnh cao của Rolex, Patek Philippe, Audemars Piguet, Cartier nguyên bản.' },
   { label: 'Thời Trang Đường Phố', id: 4, desc: 'Các thiết kế Streetwear xa xỉ, phong cách thời thượng từ Off-White, Supreme, Balenciaga.' },
-  { label: 'Trang Sức & Phụ Kiện', id: 5, desc: 'Tinh hoa trang sức kim cương, vàng khối từ Cartier, Van Cleef & Arpels, Bvlgari.' },
+  { label: 'Trang Sức - Phụ Kiện', id: 5, desc: 'Tinh hoa trang sức kim cương, vàng khối từ Cartier, Van Cleef & Arpels, Bvlgari.' },
 ];
 
 export const CONDITIONS = [
